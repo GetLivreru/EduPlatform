@@ -55,6 +55,124 @@ async def init_db():
             ],
             "difficulty": "intermediate",
             "time_limit": 15
+        },
+        {
+            "title": "Introduction to C++",
+            "description": "Тест на базовые знания C++",
+            "category": "programming",
+            "questions": [
+                {
+                    "text": "Какой оператор используется для вывода в консоль в C++?",
+                    "options": ["print()", "cout <<", "System.out.println()", "printf()"],
+                    "correct_answer": 1
+                },
+                {
+                    "text": "Как объявить целочисленную переменную в C++?",
+                    "options": ["int x;", "var x;", "integer x;", "number x;"],
+                    "correct_answer": 0
+                },
+                {
+                    "text": "Какой оператор используется для ввода с клавиатуры в C++?",
+                    "options": ["cin >>", "input()", "scanf()", "read()"],
+                    "correct_answer": 0
+                },
+                {
+                    "text": "Как объявить массив из 5 целых чисел в C++?",
+                    "options": ["int arr[5];", "array arr[5];", "int[] arr = new int[5];", "vector<int> arr(5);"],
+                    "correct_answer": 0
+                },
+                {
+                    "text": "Какой оператор используется для условного выполнения кода в C++?",
+                    "options": ["if", "when", "case", "select"],
+                    "correct_answer": 0
+                },
+                {
+                    "text": "Как объявить функцию в C++?",
+                    "options": ["function name() {}", "def name():", "void name() {}", "method name() {}"],
+                    "correct_answer": 2
+                },
+                {
+                    "text": "Какой оператор используется для цикла в C++?",
+                    "options": ["for", "loop", "while", "repeat"],
+                    "correct_answer": 0
+                },
+                {
+                    "text": "Как объявить указатель в C++?",
+                    "options": ["int* ptr;", "pointer ptr;", "ref ptr;", "&ptr;"],
+                    "correct_answer": 0
+                },
+                {
+                    "text": "Как создать объект класса в C++?",
+                    "options": ["ClassName obj;", "new ClassName();", "ClassName obj = new ClassName();", "create ClassName obj;"],
+                    "correct_answer": 0
+                },
+                {
+                    "text": "Какой оператор используется для динамического выделения памяти в C++?",
+                    "options": ["new", "malloc", "alloc", "create"],
+                    "correct_answer": 0
+                }
+            ],
+            "difficulty": "beginner",
+            "time_limit": 35
+        },
+        {
+            "title": "Introduction to ICT",
+            "description": "Тест на базовые знания информационных технологий",
+            "category": "ict",
+            "questions": [
+                {
+                    "text": "Что означает аббревиатура ICT?",
+                    "options": ["Information and Communication Technology", "International Computer Technology", "Internet Communication Tools", "Integrated Computer Technology"],
+                    "correct_answer": 0
+                },
+                {
+                    "text": "Какое устройство является основным компонентом компьютера?",
+                    "options": ["Процессор", "Монитор", "Клавиатура", "Мышь"],
+                    "correct_answer": 0
+                },
+                {
+                    "text": "Что такое операционная система?",
+                    "options": ["Программа для работы с файлами", "Система управления компьютером", "Антивирусная программа", "Текстовый редактор"],
+                    "correct_answer": 1
+                },
+                {
+                    "text": "Какой протокол используется для передачи веб-страниц?",
+                    "options": ["FTP", "HTTP", "SMTP", "TCP"],
+                    "correct_answer": 1
+                },
+                {
+                    "text": "Что такое IP-адрес?",
+                    "options": ["Уникальный идентификатор компьютера в сети", "Пароль для входа в систему", "Название программы", "Тип файла"],
+                    "correct_answer": 0
+                },
+                {
+                    "text": "Что такое база данных?",
+                    "options": ["Программа для создания документов", "Структурированный набор данных", "Графический редактор", "Веб-браузер"],
+                    "correct_answer": 1
+                },
+                {
+                    "text": "Что такое облачные вычисления?",
+                    "options": ["Хранение данных на локальном компьютере", "Использование удаленных серверов для хранения и обработки данных", "Тип антивирусной программы", "Метод шифрования данных"],
+                    "correct_answer": 1
+                },
+                {
+                    "text": "Что такое кибербезопасность?",
+                    "options": ["Создание веб-сайтов", "Защита компьютерных систем от атак", "Программирование игр", "Разработка мобильных приложений"],
+                    "correct_answer": 1
+                },
+                {
+                    "text": "Что такое искусственный интеллект?",
+                    "options": ["Тип компьютерного вируса", "Способность машин имитировать человеческий интеллект", "Метод шифрования данных", "Тип базы данных"],
+                    "correct_answer": 1
+                },
+                {
+                    "text": "Что такое Big Data?",
+                    "options": ["Маленькие файлы", "Большие объемы структурированных и неструктурированных данных", "Тип компьютерной игры", "Метод программирования"],
+                    "correct_answer": 1
+                }
+            ],
+            "difficulty": "beginner",
+            "time_limit": 35
         }
     ]
 

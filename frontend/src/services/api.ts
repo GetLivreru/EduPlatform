@@ -31,25 +31,29 @@ export const getWelcomeMessage = async () => {
     }
 };
 
-// Quiz related functions
-export interface Quiz {
-    id: number;
-    title: string;
-    subject: string;
-    difficulty: string;
-    questions: QuizQuestion[];
-}
-
+// Quiz related interfaces
 export interface QuizQuestion {
-    id: number;
-    question: string;
+    text: string;
     options: string[];
     correct_answer: number;
 }
 
+export interface Quiz {
+    _id: string;
+    title: string;
+    description: string;
+    category: string;
+    questions: QuizQuestion[];
+    difficulty: string;
+    time_limit: number;
+}
+
+// Quiz related functions
 export const getQuizzes = async (): Promise<Quiz[]> => {
     try {
+        console.log('Fetching quizzes...');
         const response = await api.get('/api/quizzes');
+        console.log('Quizzes response:', response.data);
         return response.data;
     } catch (error) {
         console.error('Error fetching quizzes:', error);
@@ -57,9 +61,11 @@ export const getQuizzes = async (): Promise<Quiz[]> => {
     }
 };
 
-export const getQuiz = async (quizId: number): Promise<Quiz> => {
+export const getQuiz = async (quizId: string): Promise<Quiz> => {
     try {
+        console.log('Fetching quiz:', quizId);
         const response = await api.get(`/api/quizzes/${quizId}`);
+        console.log('Quiz response:', response.data);
         return response.data;
     } catch (error) {
         console.error('Error fetching quiz:', error);
