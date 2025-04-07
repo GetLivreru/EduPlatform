@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getQuizzes, Quiz } from '../services/api';
 
 const QuizList: React.FC = () => {
     const [quizzes, setQuizzes] = useState<Quiz[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchQuizzes = async () => {
@@ -20,6 +22,10 @@ const QuizList: React.FC = () => {
 
         fetchQuizzes();
     }, []);
+
+    const handleStartQuiz = (quizId: string) => {
+        navigate(`/quiz/${quizId}`);
+    };
 
     if (loading) {
         return (
@@ -88,7 +94,10 @@ const QuizList: React.FC = () => {
                             </div>
                         </div>
 
-                        <button className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 px-4 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-300 flex items-center justify-center">
+                        <button 
+                            onClick={() => handleStartQuiz(quiz._id)}
+                            className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 px-4 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-300 flex items-center justify-center"
+                        >
                             <span>Start Quiz</span>
                             <svg className="ml-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />

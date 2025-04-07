@@ -33,6 +33,7 @@ export const getWelcomeMessage = async () => {
 
 // Quiz related interfaces
 export interface QuizQuestion {
+    _id: string;
     text: string;
     options: string[];
     correct_answer: number;
@@ -46,6 +47,19 @@ export interface Quiz {
     questions: QuizQuestion[];
     difficulty: string;
     time_limit: number;
+}
+
+export interface QuizAttempt {
+    _id: string;
+    quiz_id: string;
+    start_time: string;
+    status: string;
+    answers: Array<{
+        question_id: string;
+        selected_option: number;
+        submitted_at: string;
+    }>;
+    score?: number;
 }
 
 // Quiz related functions
@@ -69,6 +83,47 @@ export const getQuiz = async (quizId: string): Promise<Quiz> => {
         return response.data;
     } catch (error) {
         console.error('Error fetching quiz:', error);
+        throw error;
+    }
+};
+
+// Quiz attempt functions
+export const startQuiz = async (quizId: string): Promise<QuizAttempt> => {
+    try {
+        const response = await api.post(`/api/attempts/start/${quizId}`);
+        return response.data;
+    } catch (error) {
+        console.error('Error starting quiz:', error);
+        throw error;
+    }
+};
+
+export const submitAnswer = async (attemptId: string, answer: { question_id: string; selected_option: number }) => {
+    try {
+        const response = await api.post(`/api/attempts/${attemptId}/answer`, answer);
+        return response.data;
+    } catch (error) {
+        console.error('Error submitting answer:', error);
+        throw error;
+    }
+};
+
+export const finishQuiz = async (attemptId: string) => {
+    try {
+        const response = await api.post(`/api/attempts/${attemptId}/finish`);
+        return response.data;
+    } catch (error) {
+        console.error('Error finishing quiz:', error);
+        throw error;
+    }
+};
+
+export const getAttempt = async (attemptId: string): Promise<QuizAttempt> => {
+    try {
+        const response = await api.get(`/api/attempts/${attemptId}`);
+        return response.data;
+    } catch (error) {
+        console.error('Error getting attempt:', error);
         throw error;
     }
 }; 
