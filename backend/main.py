@@ -1,95 +1,90 @@
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
-import os
-from dotenv import load_dotenv
-from models import QuizDB, QuizResponse, LearningPathDB, LearningPathResponse
-from typing import List
-import logging
-from bson import ObjectId
+from pydantic import BaseModel
+from typing import List, Optional
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+app = FastAPI(title="Educational Quiz Platform")
 
-# Load environment variables
-load_dotenv()
-
-app = FastAPI(title="Learning Path API", description="API for personalized learning paths and quizzes")
-
-# CORS middleware
+# Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:5173"],  # Vite default port
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# MongoDB connection
-MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
-client = AsyncIOMotorClient(MONGODB_URL)
-db = client.learning_path
+# Models
+class QuizQuestion(BaseModel):
+    id: int
+    question: str
+    options: List[str]
+    correct_answer: int
+
+class Quiz(BaseModel):
+    id: int
+    title: str
+    subject: str
+    difficulty: str
+    questions: List[QuizQuestion]
+
+# Mock data
+mock_quizzes = [
+    {
+        "id": 1,
+        "title": "Basic Math Quiz",
+        "subject": "Mathematics",
+        "difficulty": "Beginner",
+        "questions": [
+            {
+                "id": 1,
+                "question": "What is 2 + 2?",
+                "options": ["3", "4", "5", "6"],
+                "correct_answer": 1
+            },
+            {
+                "id": 2,
+                "question": "What is 5 * 5?",
+                "options": ["20", "25", "30", "35"],
+                "correct_answer": 1
+            }
+        ]
+    },
+    {
+        "id": 2,
+        "title": "Advanced Math Quiz",
+        "subject": "Mathematics",
+        "difficulty": "Advanced",
+        "questions": [
+            {
+                "id": 1,
+                "question": "What is the derivative of x^2?",
+                "options": ["x", "2x", "x^3", "2x^2"],
+                "correct_answer": 1
+            }
+        ]
+    }
+]
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to Learning Path API"}
+    return {"message": "Welcome to Educational Quiz Platform API"}
 
-@app.post("/quizzes/", response_model=QuizResponse)
-async def create_quiz(quiz: QuizDB):
-    try:
-        quiz_dict = quiz.model_dump(by_alias=True, exclude={"id"})
-        result = await db.quizzes.insert_one(quiz_dict)
-        created_quiz = await db.quizzes.find_one({"_id": result.inserted_id})
-        return QuizResponse(**{**created_quiz, "id": str(created_quiz["_id"])})
-    except Exception as e:
-        logger.error(f"Error creating quiz: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+@app.get("/api/test")
+async def test_endpoint():
+    return {"status": "success", "message": "Backend is working!"}
 
-@app.get("/quizzes/{category}", response_model=List[QuizResponse])
-async def get_quizzes(category: str):
-    try:
-        logger.info(f"Fetching quizzes for category: {category}")
-        quizzes = await db.quizzes.find({"category": category}).to_list(length=100)
-        logger.info(f"Found {len(quizzes)} quizzes")
-        return [QuizResponse(**{**quiz, "id": str(quiz["_id"])}) for quiz in quizzes]
-    except Exception as e:
-        logger.error(f"Error fetching quizzes: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+@app.get("/api/quizzes", response_model=List[Quiz])
+async def get_quizzes():
+    return mock_quizzes
 
-@app.get("/quizzes/", response_model=List[QuizResponse])
-async def get_all_quizzes():
-    try:
-        logger.info("Fetching all quizzes")
-        quizzes = await db.quizzes.find().to_list(length=100)
-        logger.info(f"Found {len(quizzes)} quizzes")
-        return [QuizResponse(**{**quiz, "id": str(quiz["_id"])}) for quiz in quizzes]
-    except Exception as e:
-        logger.error(f"Error fetching all quizzes: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/learning-paths/", response_model=LearningPathResponse)
-async def create_learning_path(path: LearningPathDB):
-    try:
-        path_dict = path.model_dump(by_alias=True, exclude={"id"})
-        result = await db.learning_paths.insert_one(path_dict)
-        created_path = await db.learning_paths.find_one({"_id": result.inserted_id})
-        return LearningPathResponse(**{**created_path, "id": str(created_path["_id"])})
-    except Exception as e:
-        logger.error(f"Error creating learning path: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/learning-paths/{subject}/{level}", response_model=LearningPathResponse)
-async def get_learning_path(subject: str, level: str):
-    try:
-        path = await db.learning_paths.find_one({"subject": subject, "level": level})
-        if not path:
-            raise HTTPException(status_code=404, detail="Learning path not found")
-        return LearningPathResponse(**{**path, "id": str(path["_id"])})
-    except Exception as e:
-        logger.error(f"Error fetching learning path: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+@app.get("/api/quizzes/{quiz_id}", response_model=Quiz)
+async def get_quiz(quiz_id: int):
+    quiz = next((q for q in mock_quizzes if q["id"] == quiz_id), None)
+    if quiz is None:
+        return {"error": "Quiz not found"}
+    return quiz
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000) 
