@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { testConnection, getWelcomeMessage } from './services/api';
 import QuizList from './components/QuizList';
 import QuizAttempt from './components/QuizAttempt';
+import QuizManager from './components/admin/QuizManager';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [backendStatus, setBackendStatus] = useState<string>('checking');
@@ -37,7 +38,9 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">{welcomeMessage}</h1>
+              <Link to="/" className="text-2xl font-bold text-gray-900 hover:text-gray-700">
+                {welcomeMessage}
+              </Link>
               <p className="text-sm text-gray-500">
                 Backend status: <span className={`font-semibold ${backendStatus === 'success' ? 'text-green-600' : 'text-red-600'}`}>
                   {backendStatus}
@@ -45,6 +48,12 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               </p>
             </div>
             <div className="flex space-x-4">
+              <Link 
+                to="/admin/quizzes" 
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Admin Panel
+              </Link>
               <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
                 Profile
               </button>
@@ -101,6 +110,7 @@ const App: React.FC = () => {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/quiz/:quizId" element={<QuizAttempt />} />
+          <Route path="/admin/quizzes" element={<QuizManager />} />
         </Routes>
       </Layout>
     </Router>

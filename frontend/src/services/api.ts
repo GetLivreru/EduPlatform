@@ -126,4 +126,28 @@ export const getAttempt = async (attemptId: string): Promise<QuizAttempt> => {
         console.error('Error getting attempt:', error);
         throw error;
     }
+};
+
+// Admin functions
+interface CreateQuizData {
+    title: string;
+    description: string;
+    category: string;
+    difficulty: string;
+    time_limit: number;
+    questions: Array<{
+        text: string;
+        options: string[];
+        correct_answer: number;
+    }>;
+}
+
+export const createQuiz = async (data: CreateQuizData): Promise<Quiz> => {
+    try {
+        const response = await api.post('/api/admin/quizzes', data);
+        return response.data;
+    } catch (error) {
+        console.error('Error creating quiz:', error);
+        throw error;
+    }
 }; 

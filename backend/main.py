@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import quizzes, quiz_attempts
+from routers import quizzes, quiz_attempts, admin
 
 app = FastAPI(title="Educational Quiz Platform")
 
@@ -24,6 +24,7 @@ async def test_endpoint():
 # Include routers
 app.include_router(quizzes.router, prefix="/api/quizzes", tags=["quizzes"])
 app.include_router(quiz_attempts.router, prefix="/api/attempts", tags=["attempts"])
+app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 
 if __name__ == "__main__":
     import uvicorn
