@@ -92,7 +92,7 @@ const QuizList: React.FC<QuizListProps> = ({ selectedSubject, selectedDifficulty
                                          quiz.difficulty === 'medium' ? 'Средний' : 'Сложный'}
                                     </span>
                                     <button
-                                        onClick={() => navigate(`/quiz/${quiz.id}`)}
+                                        onClick={() => handleStartQuiz(quiz.id)}
                                         className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-300"
                                     >
                                         <FaPlay className="mr-2" />
