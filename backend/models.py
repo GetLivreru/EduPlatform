@@ -1,6 +1,7 @@
 from typing import List, Optional
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from bson import ObjectId
+from datetime import datetime
 
 class PyObjectId(str):
     @classmethod
@@ -15,7 +16,7 @@ class PyObjectId(str):
             raise ValueError("Invalid ObjectId")
         return str(v)
 
-class Question(BaseModel):
+class QuizQuestion(BaseModel):
     text: str
     options: List[str]
     correct_answer: int
@@ -24,7 +25,7 @@ class QuizBase(BaseModel):
     title: str
     description: str
     category: str
-    questions: List[Question]
+    questions: List[QuizQuestion]
     difficulty: str
     time_limit: int
 
@@ -64,4 +65,31 @@ class LearningPathResponse(LearningPathBase):
 
     model_config = ConfigDict(
         from_attributes=True
-    ) 
+    )
+
+class User(BaseModel):
+    name: str
+    login: EmailStr
+    password: str
+    is_admin: bool = False
+    created_at: datetime = datetime.now()
+
+class UserInDB(User):
+    id: str
+
+class UserCreate(BaseModel):
+    name: str
+    login: EmailStr
+    password: str
+    is_admin: bool = False
+
+class UserLogin(BaseModel):
+    login: EmailStr
+    password: str
+
+class UserResponse(BaseModel):
+    id: str
+    name: str
+    login: EmailStr
+    is_admin: bool
+    created_at: datetime 

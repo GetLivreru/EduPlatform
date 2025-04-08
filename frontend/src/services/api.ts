@@ -9,6 +9,15 @@ const api = axios.create({
     },
 });
 
+// Добавляем токен в заголовки, если он есть
+api.interceptors.request.use((config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+});
+
 // Test connection
 export const testConnection = async (): Promise<boolean> => {
     try {
@@ -39,12 +48,20 @@ export interface QuizQuestion {
 }
 
 export interface Quiz {
-    _id: string;
+    id: string;
     title: string;
     subject: string;
     difficulty: string;
     questions: QuizQuestion[];
     timeLimit: number;
+}
+
+export interface User {
+    id: string;
+    name: string;
+    login: string;
+    is_admin: boolean;
+    created_at: string;
 }
 
 export interface QuizAttempt {
@@ -136,12 +153,108 @@ interface CreateQuizData {
     }>;
 }
 
-export const createQuiz = async (data: CreateQuizData): Promise<Quiz> => {
+export const createQuiz = async (quiz: Omit<Quiz, 'id'>): Promise<Quiz> => {
     try {
-        const response = await api.post('/api/admin/quizzes', data);
+        const response = await api.post('/api/quizzes', quiz);
         return response.data;
     } catch (error) {
         console.error('Error creating quiz:', error);
         throw error;
     }
+};
+
+export const updateQuiz = async (quizId: string, quiz: Partial<Quiz>): Promise<Quiz> => {
+    try {
+        const response = await api.put(`/api/quizzes/${quizId}`, quiz);
+        return response.data;
+    } catch (error) {
+        console.error('Error updating quiz:', error);
+        throw error;
+    }
+};
+
+export const deleteQuiz = async (quizId: string): Promise<void> => {
+    try {
+        await api.delete(`/api/quizzes/${quizId}`);
+    } catch (error) {
+        console.error('Error deleting quiz:', error);
+        throw error;
+    }
+};
+
+// User functions
+export const getUsers = async (): Promise<User[]> => {
+    try {
+        const response = await api.get('/api/users');
+        return response.data;
+    } catch (error) {
+        console.error('Error getting users:', error);
+        throw error;
+    }
+};
+
+export const getUser = async (userId: string): Promise<User> => {
+    try {
+        const response = await api.get(`/api/users/${userId}`);
+        return response.data;
+    } catch (error) {
+        console.error('Error getting user:', error);
+        throw error;
+    }
+};
+
+export const createUser = async (user: Omit<User, 'id' | 'created_at'>): Promise<User> => {
+    try {
+        const response = await api.post('/api/users', user);
+        return response.data;
+    } catch (error) {
+        console.error('Error creating user:', error);
+        throw error;
+    }
+};
+
+export const updateUser = async (userId: string, user: Partial<User>): Promise<User> => {
+    try {
+        const response = await api.put(`/api/users/${userId}`, user);
+        return response.data;
+    } catch (error) {
+        console.error('Error updating user:', error);
+        throw error;
+    }
+};
+
+export const deleteUser = async (userId: string): Promise<void> => {
+    try {
+        await api.delete(`/api/users/${userId}`);
+    } catch (error) {
+        console.error('Error deleting user:', error);
+        throw error;
+    }
+};
+
+// Authentication functions
+export const login = async (login: string, password: string): Promise<{ token: string; user: User }> => {
+    try {
+        const response = await api.post('/api/login', { login, password });
+        const { access_token, user } = response.data;
+        localStorage.setItem('token', access_token);
+        return { token: access_token, user };
+    } catch (error) {
+        console.error('Error logging in:', error);
+        throw error;
+    }
+};
+
+export const register = async (name: string, login: string, password: string): Promise<User> => {
+    try {
+        const response = await api.post('/api/register', { name, login, password });
+        return response.data;
+    } catch (error) {
+        console.error('Error registering:', error);
+        throw error;
+    }
+};
+
+export const logout = (): void => {
+    localStorage.removeItem('token');
 }; 
