@@ -8,6 +8,7 @@ import QuizAttempt from './components/QuizAttempt';
 import QuizManager from './components/admin/QuizManager';
 import AdminPanel from './components/admin/AdminPanel';
 import { FaUser, FaCog, FaFilter } from 'react-icons/fa';
+import Quiz from './components/Quiz';
 
 // Компонент для проверки прав администратора
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -56,17 +57,11 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             try {
                 await testConnection();
                 setBackendStatus('success');
+                const message = await getWelcomeMessage();
+                setWelcomeMessage(message);
             } catch (error) {
                 setBackendStatus('error');
-            }
-        };
-
-        const fetchWelcomeMessage = async () => {
-            try {
-                const data = await getWelcomeMessage();
-                setWelcomeMessage(data);
-            } catch (error) {
-                console.error('Error fetching welcome message:', error);
+                setWelcomeMessage('Failed to connect to backend');
             }
         };
 
@@ -78,7 +73,6 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         };
 
         checkConnection();
-        fetchWelcomeMessage();
         checkAuth();
     }, []);
 
@@ -212,6 +206,7 @@ const App: React.FC = () => {
                             </AdminRoute>
                         }
                     />
+                    <Route path="/quiz/:id" element={<Quiz />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
             </Layout>
