@@ -50,10 +50,11 @@ export interface QuizQuestion {
 export interface Quiz {
     id: string;
     title: string;
-    subject: string;
+    description: string;
+    category: string;
+    questions: any[];
     difficulty: string;
-    questions: QuizQuestion[];
-    timeLimit: number;
+    time_limit: number;
 }
 
 export interface User {
@@ -83,25 +84,25 @@ export const getQuizzes = async (): Promise<Quiz[]> => {
         const response = await api.get('/api/quizzes');
         return response.data;
     } catch (error) {
-        console.error('Error getting quizzes:', error);
+        console.error('Error fetching quizzes:', error);
         throw error;
     }
 };
 
-export const getQuiz = async (quizId: string): Promise<Quiz> => {
+export const getQuiz = async (id: string): Promise<Quiz> => {
     try {
-        const response = await api.get(`/api/quizzes/${quizId}`);
+        const response = await api.get(`/api/quizzes/${id}`);
         return response.data;
     } catch (error) {
-        console.error('Error getting quiz:', error);
+        console.error('Error fetching quiz:', error);
         throw error;
     }
 };
 
 // Quiz attempt functions
-export const startQuiz = async (quizId: string): Promise<QuizAttempt> => {
+export const startQuiz = async (quizId: string) => {
     try {
-        const response = await api.post(`/api/attempts/start/${quizId}`);
+        const response = await api.post(`/api/quiz-attempts`, { quiz_id: quizId });
         return response.data;
     } catch (error) {
         console.error('Error starting quiz:', error);
@@ -109,9 +110,12 @@ export const startQuiz = async (quizId: string): Promise<QuizAttempt> => {
     }
 };
 
-export const submitAnswer = async (attemptId: string, answer: { question_id: string; selected_option: number }) => {
+export const submitAnswer = async (attemptId: string, questionIndex: number, answer: number) => {
     try {
-        const response = await api.post(`/api/attempts/${attemptId}/answer`, answer);
+        const response = await api.post(`/api/quiz-attempts/${attemptId}/answer`, {
+            question_index: questionIndex,
+            answer: answer
+        });
         return response.data;
     } catch (error) {
         console.error('Error submitting answer:', error);
