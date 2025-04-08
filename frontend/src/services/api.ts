@@ -10,43 +10,41 @@ const api = axios.create({
 });
 
 // Test connection
-export const testConnection = async () => {
+export const testConnection = async (): Promise<boolean> => {
     try {
-        const response = await api.get('/api/test');
-        return response.data;
+        await api.get('/');
+        return true;
     } catch (error) {
         console.error('Error testing connection:', error);
-        throw error;
+        return false;
     }
 };
 
 // Get welcome message
-export const getWelcomeMessage = async () => {
+export const getWelcomeMessage = async (): Promise<string> => {
     try {
         const response = await api.get('/');
-        return response.data;
+        return response.data.message;
     } catch (error) {
-        console.error('Error fetching welcome message:', error);
+        console.error('Error getting welcome message:', error);
         throw error;
     }
 };
 
 // Quiz related interfaces
 export interface QuizQuestion {
-    _id: string;
-    text: string;
+    question: string;
     options: string[];
-    correct_answer: number;
+    correctAnswer: string;
 }
 
 export interface Quiz {
     _id: string;
     title: string;
-    description: string;
-    category: string;
-    questions: QuizQuestion[];
+    subject: string;
     difficulty: string;
-    time_limit: number;
+    questions: QuizQuestion[];
+    timeLimit: number;
 }
 
 export interface QuizAttempt {
@@ -65,24 +63,20 @@ export interface QuizAttempt {
 // Quiz related functions
 export const getQuizzes = async (): Promise<Quiz[]> => {
     try {
-        console.log('Fetching quizzes...');
         const response = await api.get('/api/quizzes');
-        console.log('Quizzes response:', response.data);
         return response.data;
     } catch (error) {
-        console.error('Error fetching quizzes:', error);
+        console.error('Error getting quizzes:', error);
         throw error;
     }
 };
 
 export const getQuiz = async (quizId: string): Promise<Quiz> => {
     try {
-        console.log('Fetching quiz:', quizId);
         const response = await api.get(`/api/quizzes/${quizId}`);
-        console.log('Quiz response:', response.data);
         return response.data;
     } catch (error) {
-        console.error('Error fetching quiz:', error);
+        console.error('Error getting quiz:', error);
         throw error;
     }
 };

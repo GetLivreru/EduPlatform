@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
 import { testConnection, getWelcomeMessage } from './services/api';
 import QuizList from './components/QuizList';
+import Login from './components/auth/Login';
+import Register from './components/auth/Register';
 import QuizAttempt from './components/QuizAttempt';
 import QuizManager from './components/admin/QuizManager';
+import { FaUser, FaCog, FaFilter } from 'react-icons/fa';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [backendStatus, setBackendStatus] = useState<string>('checking');
@@ -42,24 +45,24 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 {welcomeMessage}
               </Link>
               <p className="text-sm text-gray-500">
-                Backend status: <span className={`font-semibold ${backendStatus === 'success' ? 'text-green-600' : 'text-red-600'}`}>
-                  {backendStatus}
+                Статус сервера: <span className={`font-semibold ${backendStatus === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+                  {backendStatus === 'success' ? 'Подключен' : 'Ошибка подключения'}
                 </span>
               </p>
             </div>
             <div className="flex space-x-4">
               <Link 
-                to="/admin/quizzes" 
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                to="/login" 
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
               >
-                Admin Panel
+                Войти
               </Link>
-              <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
-                Profile
-              </button>
-              <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
-                Settings
-              </button>
+              <Link 
+                to="/register" 
+                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+              >
+                Регистрация
+              </Link>
             </div>
           </div>
         </div>
@@ -72,7 +75,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       <footer className="bg-white border-t border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <p className="text-center text-gray-500 text-sm">
-            © 2024 Educational Quiz Platform. All rights reserved.
+            © 2024 Платформа образовательных тестов. Все права защищены.
           </p>
         </div>
       </footer>
@@ -81,24 +84,41 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 const HomePage: React.FC = () => {
+  const [selectedSubject, setSelectedSubject] = useState<string>('all');
+  const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all');
+
   return (
     <div className="mb-8">
-      <h2 className="text-2xl font-bold text-gray-900 mb-4">Available Quizzes</h2>
-      <div className="flex space-x-4 mb-4">
-        <select className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-          <option value="">All Subjects</option>
-          <option value="mathematics">Mathematics</option>
-          <option value="programming">Programming</option>
-          <option value="science">Science</option>
-        </select>
-        <select className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-          <option value="">All Levels</option>
-          <option value="beginner">Beginner</option>
-          <option value="intermediate">Intermediate</option>
-          <option value="advanced">Advanced</option>
-        </select>
+      <h2 className="text-2xl font-bold text-gray-900 mb-4">Доступные тесты</h2>
+      <div className="flex flex-wrap gap-4 mb-6">
+        <div className="flex items-center">
+          <FaFilter className="text-gray-500 mr-2" />
+          <select
+            className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={selectedSubject}
+            onChange={(e) => setSelectedSubject(e.target.value)}
+          >
+            <option value="all">Все предметы</option>
+            <option value="C++">C++</option>
+            <option value="ICT">ICT</option>
+          </select>
+        </div>
+        
+        <div className="flex items-center">
+          <FaFilter className="text-gray-500 mr-2" />
+          <select
+            className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={selectedDifficulty}
+            onChange={(e) => setSelectedDifficulty(e.target.value)}
+          >
+            <option value="all">Все уровни</option>
+            <option value="Easy">Легкий</option>
+            <option value="Medium">Средний</option>
+            <option value="Hard">Сложный</option>
+          </select>
+        </div>
       </div>
-      <QuizList />
+      <QuizList selectedSubject={selectedSubject} selectedDifficulty={selectedDifficulty} />
     </div>
   );
 };
@@ -109,8 +129,11 @@ const App: React.FC = () => {
       <Layout>
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
           <Route path="/quiz/:quizId" element={<QuizAttempt />} />
           <Route path="/admin/quizzes" element={<QuizManager />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Layout>
     </Router>

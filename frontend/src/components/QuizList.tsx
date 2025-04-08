@@ -1,113 +1,133 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getQuizzes, Quiz } from '../services/api';
+import { getQuizzes } from '../services/api';
+import { FaBook, FaGraduationCap, FaQuestionCircle, FaClock, FaSpinner } from 'react-icons/fa';
 
-const QuizList: React.FC = () => {
-    const [quizzes, setQuizzes] = useState<Quiz[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const navigate = useNavigate();
+interface QuizQuestion {
+  question: string;
+  options: string[];
+  correctAnswer: string;
+}
 
-    useEffect(() => {
-        const fetchQuizzes = async () => {
-            try {
-                const data = await getQuizzes();
-                setQuizzes(data);
-                setLoading(false);
-            } catch (err) {
-                setError('Failed to load quizzes');
-                setLoading(false);
-            }
-        };
+interface Quiz {
+  _id: string;
+  title: string;
+  subject: string;
+  difficulty: string;
+  questions: QuizQuestion[];
+  timeLimit: number;
+}
 
-        fetchQuizzes();
-    }, []);
+interface QuizListProps {
+  selectedSubject?: string;
+  selectedDifficulty?: string;
+}
 
-    const handleStartQuiz = (quizId: string) => {
-        navigate(`/quiz/${quizId}`);
+const QuizList: React.FC<QuizListProps> = ({ selectedSubject = 'all', selectedDifficulty = 'all' }) => {
+  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchQuizzes = async () => {
+      try {
+        setLoading(true);
+        const data = await getQuizzes();
+        
+        // Apply filters
+        let filteredQuizzes = data;
+        if (selectedSubject !== 'all') {
+          filteredQuizzes = filteredQuizzes.filter(quiz => quiz.subject === selectedSubject);
+        }
+        if (selectedDifficulty !== 'all') {
+          filteredQuizzes = filteredQuizzes.filter(quiz => quiz.difficulty === selectedDifficulty);
+        }
+        
+        setQuizzes(filteredQuizzes);
+        setError(null);
+      } catch (err) {
+        setError('Failed to fetch quizzes');
+        console.error('Error fetching quizzes:', err);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    if (loading) {
-        return (
-            <div className="flex justify-center items-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-            </div>
-        );
-    }
+    fetchQuizzes();
+  }, [selectedSubject, selectedDifficulty]);
 
-    if (error) {
-        return (
-            <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
-                <div className="flex">
-                    <div className="flex-shrink-0">
-                        <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                        </svg>
-                    </div>
-                    <div className="ml-3">
-                        <p className="text-sm text-red-700">{error}</p>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
+  if (loading) {
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {quizzes.map((quiz) => (
-                <div key={quiz._id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 transform hover:-translate-y-1">
-                    <div className="p-6">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-xl font-bold text-gray-900">{quiz.title}</h2>
-                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                                quiz.difficulty === 'beginner' 
-                                    ? 'bg-green-100 text-green-800' 
-                                    : quiz.difficulty === 'intermediate'
-                                    ? 'bg-yellow-100 text-yellow-800'
-                                    : 'bg-purple-100 text-purple-800'
-                            }`}>
-                                {quiz.difficulty}
-                            </span>
-                        </div>
-                        
-                        <p className="text-gray-600 mb-4">{quiz.description}</p>
-                        
-                        <div className="flex items-center text-sm text-gray-500 mb-4">
-                            <svg className="h-5 w-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                            </svg>
-                            <span>{quiz.category}</span>
-                        </div>
-
-                        <div className="flex items-center justify-between text-sm text-gray-500 mb-6">
-                            <div className="flex items-center">
-                                <svg className="h-5 w-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                                </svg>
-                                <span>{quiz.questions.length} questions</span>
-                            </div>
-                            <div className="flex items-center">
-                                <svg className="h-5 w-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <span>{quiz.time_limit} min</span>
-                            </div>
-                        </div>
-
-                        <button 
-                            onClick={() => handleStartQuiz(quiz._id)}
-                            className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 px-4 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-300 flex items-center justify-center"
-                        >
-                            <span>Start Quiz</span>
-                            <svg className="ml-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-            ))}
-        </div>
+      <div className="flex justify-center items-center h-64">
+        <FaSpinner className="animate-spin text-4xl text-blue-500" />
+      </div>
     );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64 bg-red-50 rounded-lg">
+        <div className="text-center">
+          <FaSpinner className="text-red-500 text-4xl mb-4" />
+          <p className="text-red-600">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (quizzes.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-500">No quizzes found matching your criteria.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {quizzes.map((quiz) => (
+        <div
+          key={quiz._id}
+          className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6"
+        >
+          <h3 className="text-xl font-semibold text-gray-800 mb-4">{quiz.title}</h3>
+          
+          <div className="space-y-3">
+            <div className="flex items-center text-gray-600">
+              <FaBook className="mr-2" />
+              <span>{quiz.subject}</span>
+            </div>
+            
+            <div className="flex items-center">
+              <FaGraduationCap className="mr-2" />
+              <span className={`px-2 py-1 rounded-full text-sm ${
+                quiz.difficulty === 'Easy' ? 'bg-green-100 text-green-800' :
+                quiz.difficulty === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                'bg-red-100 text-red-800'
+              }`}>
+                {quiz.difficulty}
+              </span>
+            </div>
+            
+            <div className="flex items-center text-gray-600">
+              <FaQuestionCircle className="mr-2" />
+              <span>{quiz.questions.length} questions</span>
+            </div>
+            
+            <div className="flex items-center text-gray-600">
+              <FaClock className="mr-2" />
+              <span>{quiz.timeLimit} minutes</span>
+            </div>
+          </div>
+          
+          <button
+            className="mt-6 w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-2 px-4 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-colors duration-300 flex items-center justify-center"
+          >
+            Start Quiz
+          </button>
+        </div>
+      ))}
+    </div>
+  );
 };
 
 export default QuizList; 
