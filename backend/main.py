@@ -1,12 +1,13 @@
 from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
-from models import QuizBase, QuizQuestion, UserCreate, UserLogin, UserResponse, QuizDB, QuizResponse, UserInDB
+from models import QuizBase, QuizQuestion, UserCreate, UserLogin, UserResponse, QuizDB, QuizResponse, UserInDB, QuizAttempt
 from middleware import create_access_token, get_current_user, require_admin
 from datetime import datetime, timedelta
 from passlib.context import CryptContext
 from bson import ObjectId
 from typing import List
+from routers import quiz_attempts
 
 app = FastAPI(title="Educational Quiz Platform")
 
@@ -21,7 +22,7 @@ app.add_middleware(
 
 # Подключение к MongoDB
 client = AsyncIOMotorClient("mongodb://localhost:27017")
-db = client.LearnApp
+db = client.learning_path
 
 # Получение коллекций
 users_collection = db.users
@@ -31,6 +32,9 @@ quiz_attempts_collection = db.quiz_attempts
 
 # Настройка хеширования паролей
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# Include quiz attempts router
+app.include_router(quiz_attempts.router, prefix="/api/quiz-attempts", tags=["quiz-attempts"])
 
 @app.get("/")
 async def root():
@@ -111,11 +115,15 @@ async def get_quizzes():
 @app.get("/api/quizzes/{quiz_id}", response_model=QuizResponse)
 async def get_quiz(quiz_id: str):
     try:
+        print(f"Attempting to fetch quiz with ID: {quiz_id}")
         quiz = await quizzes_collection.find_one({"_id": ObjectId(quiz_id)})
         if not quiz:
+            print(f"Quiz not found with ID: {quiz_id}")
             raise HTTPException(status_code=404, detail="Тест не найден")
+        print(f"Found quiz: {quiz}")
         # Преобразуем _id в строку для правильной сериализации
         quiz["id"] = str(quiz["_id"])
+        del quiz["_id"]  # Удаляем _id, так как он уже преобразован в id
         return QuizResponse(**quiz)
     except Exception as e:
         print(f"Error fetching quiz {quiz_id}: {str(e)}")

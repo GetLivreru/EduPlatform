@@ -52,7 +52,7 @@ export interface Quiz {
     title: string;
     description: string;
     category: string;
-    questions: any[];
+    questions: QuizQuestion[];
     difficulty: string;
     time_limit: number;
 }

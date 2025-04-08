@@ -1,10 +1,11 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Body
 from motor.motor_asyncio import AsyncIOMotorClient
 from bson import ObjectId
 from typing import List, Dict
 import os
 from dotenv import load_dotenv
 from datetime import datetime
+from pydantic import BaseModel
 
 load_dotenv()
 
@@ -15,17 +16,23 @@ MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
 client = AsyncIOMotorClient(MONGODB_URL)
 db = client.learning_path
 
-@router.post("/start/{quiz_id}")
-async def start_quiz(quiz_id: str):
-    try:
-        # Get quiz
-        quiz = await db.quizzes.find_one({"_id": ObjectId(quiz_id)})
-        if not quiz:
-            raise HTTPException(status_code=404, detail="Quiz not found")
+class QuizAttemptCreate(BaseModel):
+    quiz_id: str
 
-        # Create quiz attempt
+@router.post("/")
+async def create_quiz_attempt(attempt_data: QuizAttemptCreate):
+    try:
+        print(f"Creating quiz attempt for quiz_id: {attempt_data.quiz_id}")
+        
+        # Проверяем существование теста
+        quiz = await db.quizzes.find_one({"_id": ObjectId(attempt_data.quiz_id)})
+        if not quiz:
+            print(f"Quiz not found with ID: {attempt_data.quiz_id}")
+            raise HTTPException(status_code=404, detail="Тест не найден")
+
+        # Создаем новую попытку
         attempt = {
-            "quiz_id": ObjectId(quiz_id),
+            "quiz_id": ObjectId(attempt_data.quiz_id),
             "start_time": datetime.utcnow(),
             "status": "in_progress",
             "answers": [],
@@ -36,8 +43,10 @@ async def start_quiz(quiz_id: str):
         attempt["_id"] = str(result.inserted_id)
         attempt["quiz_id"] = str(attempt["quiz_id"])
         
+        print(f"Created quiz attempt: {attempt}")
         return attempt
     except Exception as e:
+        print(f"Error creating quiz attempt: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/{attempt_id}/answer")
