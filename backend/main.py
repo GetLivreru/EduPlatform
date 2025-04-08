@@ -1,14 +1,12 @@
 from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import List, Optional
-from models import QuizBase, QuizQuestion, UserCreate, UserLogin, UserResponse, QuizDB, QuizResponse
-from middleware import create_access_token, get_current_user, require_admin
-from datetime import timedelta, datetime
-from passlib.context import CryptContext
 from motor.motor_asyncio import AsyncIOMotorClient
+from models import QuizBase, QuizQuestion, UserCreate, UserLogin, UserResponse, QuizDB, QuizResponse, UserInDB
+from middleware import create_access_token, get_current_user, require_admin
+from datetime import datetime, timedelta
+from passlib.context import CryptContext
 from bson import ObjectId
-import os
+from typing import List
 
 app = FastAPI(title="Educational Quiz Platform")
 
@@ -49,12 +47,12 @@ async def register(user: UserCreate):
     hashed_password = pwd_context.hash(user.password)
     user_dict = user.dict()
     user_dict["password"] = hashed_password
+    user_dict["created_at"] = datetime.now()
     
     # Сохраняем пользователя
     result = await users_collection.insert_one(user_dict)
     created_user = await users_collection.find_one({"_id": result.inserted_id})
-    created_user["id"] = str(created_user["_id"])
-    return UserResponse(**created_user)
+    return UserInDB(**created_user)
 
 @app.post("/api/login")
 async def login(user: UserLogin):
@@ -81,28 +79,56 @@ async def login(user: UserLogin):
         }
     }
 
-@app.get("/api/quizzes")
+@app.get("/api/quizzes", response_model=List[QuizResponse])
 async def get_quizzes():
-    quizzes = []
-    async for quiz in quizzes_collection.find():
-        quiz["id"] = str(quiz["_id"])
-        quizzes.append(QuizDB(**quiz))
-    return quizzes
+    try:
+        print("Starting to fetch quizzes...")
+        quizzes = []
+        cursor = quizzes_collection.find()
+        async for quiz_doc in cursor:
+            try:
+                print(f"Processing quiz: {quiz_doc}")
+                # Преобразуем _id в строку для правильной сериализации
+                quiz_doc["id"] = str(quiz_doc["_id"])
+                del quiz_doc["_id"]  # Удаляем _id, так как он уже преобразован в id
+                quiz = QuizResponse(**quiz_doc)
+                quizzes.append(quiz)
+                print(f"Successfully processed quiz: {quiz.title}")
+            except Exception as e:
+                print(f"Error processing quiz: {quiz_doc.get('title', 'Unknown')}")
+                print(f"Quiz document: {quiz_doc}")
+                print(f"Error details: {str(e)}")
+                continue
+        print(f"Total quizzes processed: {len(quizzes)}")
+        return quizzes
+    except Exception as e:
+        print(f"Error fetching quizzes: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to fetch quizzes: {str(e)}"
+        )
 
-@app.get("/api/quizzes/{quiz_id}")
+@app.get("/api/quizzes/{quiz_id}", response_model=QuizResponse)
 async def get_quiz(quiz_id: str):
-    quiz = await quizzes_collection.find_one({"_id": ObjectId(quiz_id)})
-    if not quiz:
-        raise HTTPException(status_code=404, detail="Тест не найден")
-    quiz["id"] = str(quiz["_id"])
-    return QuizDB(**quiz)
+    try:
+        quiz = await quizzes_collection.find_one({"_id": ObjectId(quiz_id)})
+        if not quiz:
+            raise HTTPException(status_code=404, detail="Тест не найден")
+        # Преобразуем _id в строку для правильной сериализации
+        quiz["id"] = str(quiz["_id"])
+        return QuizResponse(**quiz)
+    except Exception as e:
+        print(f"Error fetching quiz {quiz_id}: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to fetch quiz: {str(e)}"
+        )
 
 # Защищенные маршруты для администраторов
-@app.post("/api/quizzes", dependencies=[Depends(require_admin)])
+@app.post("/api/quizzes", response_model=QuizResponse, dependencies=[Depends(require_admin)])
 async def create_quiz(quiz: QuizBase):
     result = await quizzes_collection.insert_one(quiz.dict())
     created_quiz = await quizzes_collection.find_one({"_id": result.inserted_id})
-    created_quiz["id"] = str(created_quiz["_id"])
     return QuizDB(**created_quiz)
 
 @app.put("/api/quizzes/{quiz_id}", dependencies=[Depends(require_admin)])
