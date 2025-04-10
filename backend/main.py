@@ -22,7 +22,7 @@ app.add_middleware(
 
 # Подключение к MongoDB
 client = AsyncIOMotorClient("mongodb://localhost:27017")
-db = client.learning_path
+db = client.LearnApp
 
 # Получение коллекций
 users_collection = db.users
