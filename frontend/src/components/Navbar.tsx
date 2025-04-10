@@ -1,17 +1,21 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { FaUser, FaCog } from 'react-icons/fa';
-import { logout } from '../services/api';
+import { logout as apiLogout } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useEffect } from 'react';
 
 const Navbar = () => {
-  const { user, setUser } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    console.log('Navbar: user state changed to:', user);
+  }, [user]);
+
   const handleLogout = () => {
+    console.log('Navbar: logout clicked');
+    apiLogout();
     logout();
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setUser(null);
     navigate('/login');
   };
 

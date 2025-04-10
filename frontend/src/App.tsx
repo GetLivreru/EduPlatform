@@ -7,8 +7,9 @@ import Register from './components/auth/Register';
 import QuizAttempt from './components/QuizAttempt';
 import QuizManager from './components/admin/QuizManager';
 import AdminPanel from './components/admin/AdminPanel';
-import { FaUser, FaCog, FaFilter } from 'react-icons/fa';
+import { FaFilter } from 'react-icons/fa';
 import Quiz from './components/Quiz';
+import { AuthProvider, useAuth } from './context/AuthContext';
 
 // Компонент для проверки прав администратора
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -49,9 +50,7 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [backendStatus, setBackendStatus] = useState<string>('checking');
     const [welcomeMessage, setWelcomeMessage] = useState<string>('');
-    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-    const [isAdmin, setIsAdmin] = useState<boolean>(false);
-    const [userName, setUserName] = useState<string>('');
+    const { user, logout } = useAuth();
 
     useEffect(() => {
         const checkConnection = async () => {
@@ -66,21 +65,13 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             }
         };
 
-        const checkAuth = () => {
-            const token = localStorage.getItem('token');
-            const userData = localStorage.getItem('user');
-            setIsAuthenticated(!!token);
-            
-            if (userData) {
-                const user = JSON.parse(userData);
-                setIsAdmin(user.is_admin);
-                setUserName(user.name);
-            }
-        };
-
         checkConnection();
-        checkAuth();
     }, []);
+
+    const handleLogout = () => {
+        logout();
+        window.location.reload();
+    };
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
@@ -98,10 +89,10 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                             </p>
                         </div>
                         <div className="flex items-center space-x-4">
-                            {isAuthenticated ? (
+                            {user ? (
                                 <>
-                                    <span className="text-gray-700">Привет, {userName}</span>
-                                    {isAdmin && (
+                                    <span className="text-gray-700">Привет, {user.name}</span>
+                                    {user.is_admin && (
                                         <Link 
                                             to="/admin" 
                                             className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
@@ -110,11 +101,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                                         </Link>
                                     )}
                                     <button 
-                                        onClick={() => {
-                                            localStorage.removeItem('token');
-                                            localStorage.removeItem('user');
-                                            window.location.reload();
-                                        }}
+                                        onClick={handleLogout}
                                         className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
                                     >
                                         Выйти
@@ -198,27 +185,29 @@ const HomePage: React.FC = () => {
 
 const App: React.FC = () => {
     return (
-        <Router>
-            <Layout>
-                <Routes>
-                    <Route path="/" element={<HomePage />} />
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/register" element={<Register />} />
-                    <Route path="/quiz/:quizId" element={<QuizAttempt />} />
-                    <Route path="/admin/quizzes" element={<QuizManager />} />
-                    <Route
-                        path="/admin"
-                        element={
-                            <AdminRoute>
-                                <AdminPanel />
-                            </AdminRoute>
-                        }
-                    />
-                    <Route path="/quiz/:id" element={<Quiz />} />
-                    <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-            </Layout>
-        </Router>
+        <AuthProvider>
+            <Router>
+                <Layout>
+                    <Routes>
+                        <Route path="/" element={<HomePage />} />
+                        <Route path="/login" element={<Login />} />
+                        <Route path="/register" element={<Register />} />
+                        <Route path="/quiz/:quizId" element={<QuizAttempt />} />
+                        <Route path="/admin/quizzes" element={<QuizManager />} />
+                        <Route
+                            path="/admin"
+                            element={
+                                <AdminRoute>
+                                    <AdminPanel />
+                                </AdminRoute>
+                            }
+                        />
+                        <Route path="/quiz/:id" element={<Quiz />} />
+                        <Route path="*" element={<Navigate to="/" replace />} />
+                    </Routes>
+                </Layout>
+            </Router>
+        </AuthProvider>
     );
 };
 

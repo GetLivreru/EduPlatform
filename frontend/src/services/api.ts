@@ -148,19 +148,6 @@ export const getAttempt = async (attemptId: string): Promise<QuizAttempt> => {
 };
 
 // Admin functions
-interface CreateQuizData {
-    title: string;
-    description: string;
-    category: string;
-    difficulty: string;
-    time_limit: number;
-    questions: Array<{
-        text: string;
-        options: string[];
-        correct_answer: number;
-    }>;
-}
-
 export const createQuiz = async (quiz: Omit<Quiz, 'id'>): Promise<Quiz> => {
     try {
         const response = await api.post('/api/quizzes', quiz);

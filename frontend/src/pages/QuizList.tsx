@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 interface Quiz {
   _id: string;
-  subject: str;
+  subject: string;
   difficulty_level: string;
   time_limit?: number;
 }

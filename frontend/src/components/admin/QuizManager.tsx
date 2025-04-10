@@ -51,7 +51,7 @@ const QuizManager: React.FC = () => {
         }
 
         try {
-            const quiz = await createQuiz({
+            await createQuiz({
                 title,
                 description,
                 category,

@@ -58,10 +58,7 @@ const QuizAttempt: React.FC = () => {
         if (selectedOption === null || !attemptId) return;
 
         try {
-            await submitAnswer(attemptId, {
-                question_id: quiz.questions[currentQuestion]._id,
-                selected_option: selectedOption
-            });
+            await submitAnswer(attemptId, currentQuestion, selectedOption);
 
             if (currentQuestion < quiz.questions.length - 1) {
                 setCurrentQuestion(prev => prev + 1);

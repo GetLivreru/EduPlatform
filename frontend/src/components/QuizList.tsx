@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaBook, FaGraduationCap, FaClock, FaQuestion, FaPlay, FaExclamationCircle } from 'react-icons/fa';
+import { FaBook, FaClock, FaQuestion, FaPlay, FaExclamationCircle } from 'react-icons/fa';
 import { getQuizzes, Quiz } from '../services/api';
 
 interface QuizListProps {

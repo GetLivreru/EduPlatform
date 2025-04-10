@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaEnvelope, FaLock } from 'react-icons/fa';
-import { login } from '../../services/api';
+import { login as apiLogin } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
 const Login: React.FC = () => {
@@ -11,7 +11,7 @@ const Login: React.FC = () => {
     });
     const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
-    const { setUser } = useAuth();
+    const { login } = useAuth();
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -24,14 +24,18 @@ const Login: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
-
+    
         try {
-            const response = await login(formData.login, formData.password);
+            console.log('Attempting to login...');
+            const response = await apiLogin(formData.login, formData.password);
+            console.log('Login response:', response);
             localStorage.setItem('token', response.token);
-            localStorage.setItem('user', JSON.stringify(response.user));
-            setUser(response.user);
+            console.log('Setting user in context...');
+            await login(response.user);
+            console.log('User set in context, navigating...');
             navigate('/');
         } catch (err) {
+            console.error('Login error:', err);
             setError('Неверный email или пароль');
         }
     };
