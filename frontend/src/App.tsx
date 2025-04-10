@@ -51,6 +51,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [welcomeMessage, setWelcomeMessage] = useState<string>('');
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
     const [isAdmin, setIsAdmin] = useState<boolean>(false);
+    const [userName, setUserName] = useState<string>('');
 
     useEffect(() => {
         const checkConnection = async () => {
@@ -67,9 +68,14 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
         const checkAuth = () => {
             const token = localStorage.getItem('token');
+            const userData = localStorage.getItem('user');
             setIsAuthenticated(!!token);
-            // TODO: Добавить проверку прав администратора
-            setIsAdmin(true); // Временно
+            
+            if (userData) {
+                const user = JSON.parse(userData);
+                setIsAdmin(user.is_admin);
+                setUserName(user.name);
+            }
         };
 
         checkConnection();
@@ -91,9 +97,10 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                                 </span>
                             </p>
                         </div>
-                        <div className="flex space-x-4">
+                        <div className="flex items-center space-x-4">
                             {isAuthenticated ? (
                                 <>
+                                    <span className="text-gray-700">Привет, {userName}</span>
                                     {isAdmin && (
                                         <Link 
                                             to="/admin" 
@@ -105,6 +112,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                                     <button 
                                         onClick={() => {
                                             localStorage.removeItem('token');
+                                            localStorage.removeItem('user');
                                             window.location.reload();
                                         }}
                                         className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"

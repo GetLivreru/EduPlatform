@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaUser, FaLock, FaEnvelope } from 'react-icons/fa';
+import { register } from '../../services/api';
 
 const Register: React.FC = () => {
     const [formData, setFormData] = useState({
@@ -24,11 +25,14 @@ const Register: React.FC = () => {
         setError(null);
 
         try {
-            // TODO: Add registration API call
-            console.log('Registering user:', formData);
+            await register(formData.name, formData.login, formData.password);
             navigate('/login');
-        } catch (err) {
-            setError('Ошибка регистрации. Пожалуйста, попробуйте снова.');
+        } catch (err: any) {
+            if (err.response?.data?.detail) {
+                setError(err.response.data.detail);
+            } else {
+                setError('Ошибка регистрации. Пожалуйста, попробуйте снова.');
+            }
         }
     };
 
@@ -94,6 +98,7 @@ const Register: React.FC = () => {
                                     name="login"
                                     type="email"
                                     required
+                                    pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
                                     className="appearance-none relative block w-full pl-10 px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                                     placeholder="Email"
                                     value={formData.login}

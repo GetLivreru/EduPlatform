@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaEnvelope, FaLock } from 'react-icons/fa';
+import { login } from '../../services/api';
 
 const Login: React.FC = () => {
     const [formData, setFormData] = useState({
@@ -23,11 +24,12 @@ const Login: React.FC = () => {
         setError(null);
 
         try {
-            // TODO: Add login API call
-            console.log('Logging in user:', formData);
+            const response = await login(formData.login, formData.password);
+            localStorage.setItem('token', response.token);
+            localStorage.setItem('user', JSON.stringify(response.user));
             navigate('/');
         } catch (err) {
-            setError('Ошибка входа. Пожалуйста, проверьте свои данные и попробуйте снова.');
+            setError('Неверный email или пароль');
         }
     };
 

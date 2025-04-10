@@ -49,14 +49,19 @@ async def register(user: UserCreate):
     
     # Хешируем пароль
     hashed_password = pwd_context.hash(user.password)
-    user_dict = user.dict()
+    user_dict = user.model_dump()
     user_dict["password"] = hashed_password
     user_dict["created_at"] = datetime.now()
     
     # Сохраняем пользователя
     result = await users_collection.insert_one(user_dict)
     created_user = await users_collection.find_one({"_id": result.inserted_id})
-    return UserInDB(**created_user)
+    
+    # Преобразуем _id в строку для правильной сериализации
+    created_user["id"] = str(created_user["_id"])
+    del created_user["_id"]
+    
+    return UserResponse(**created_user)
 
 @app.post("/api/login")
 async def login(user: UserLogin):
