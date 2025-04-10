@@ -6,7 +6,7 @@ import getpass
 
 # Настройка подключения к MongoDB
 client = AsyncIOMotorClient("mongodb://localhost:27017")
-db = client.quiz_platform
+db = client.LearnApp
 users_collection = db.users
 
 # Настройка хеширования паролей

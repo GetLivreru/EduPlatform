@@ -1,24 +1,11 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
-import { FaUser } from 'react-icons/fa';
+import { FaUser, FaCog } from 'react-icons/fa';
 import { logout } from '../services/api';
-
-interface User {
-  name: string;
-  login: string;
-  is_admin: boolean;
-}
+import { useAuth } from '../context/AuthContext';
 
 const Navbar = () => {
-  const [user, setUser] = useState<User | null>(null);
+  const { user, setUser } = useAuth();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      setUser(JSON.parse(userStr));
-    }
-  }, []);
 
   const handleLogout = () => {
     logout();
@@ -39,9 +26,17 @@ const Navbar = () => {
             <Link to="/" className="text-gray-600 hover:text-gray-800">
               Квизы
             </Link>
-            <Link to="/progress" className="text-gray-600 hover:text-gray-800">
-              Прогресс
-            </Link>
+            {user && (
+              <Link to="/progress" className="text-gray-600 hover:text-gray-800">
+                Прогресс
+              </Link>
+            )}
+            {user?.is_admin && (
+              <Link to="/admin/quizzes" className="text-gray-600 hover:text-gray-800 flex items-center">
+                <FaCog className="mr-1" />
+                Админ панель
+              </Link>
+            )}
             {user ? (
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">

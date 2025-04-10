@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaEnvelope, FaLock } from 'react-icons/fa';
 import { login } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 const Login: React.FC = () => {
     const [formData, setFormData] = useState({
@@ -10,6 +11,7 @@ const Login: React.FC = () => {
     });
     const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
+    const { setUser } = useAuth();
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -27,6 +29,7 @@ const Login: React.FC = () => {
             const response = await login(formData.login, formData.password);
             localStorage.setItem('token', response.token);
             localStorage.setItem('user', JSON.stringify(response.user));
+            setUser(response.user);
             navigate('/');
         } catch (err) {
             setError('Неверный email или пароль');
