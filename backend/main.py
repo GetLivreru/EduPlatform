@@ -7,7 +7,8 @@ from datetime import datetime, timedelta
 from passlib.context import CryptContext
 from bson import ObjectId
 from typing import List
-from routers import quiz_attempts
+from routers import quiz_attempts, quizzes
+import os
 
 app = FastAPI(title="Educational Quiz Platform")
 
@@ -20,21 +21,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Подключение к MongoDB
-client = AsyncIOMotorClient("mongodb://localhost:27017")
+# MongoDB connection
+MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
+client = AsyncIOMotorClient(MONGODB_URL)
 db = client.LearnApp
 
-# Получение коллекций
-users_collection = db.users
+# Collections
 quizzes_collection = db.quizzes
+users_collection = db.users
 learning_paths_collection = db.learning_paths
 quiz_attempts_collection = db.quiz_attempts
 
 # Настройка хеширования паролей
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# Include quiz attempts router
+# Include routers
 app.include_router(quiz_attempts.router, prefix="/api/quiz-attempts", tags=["quiz-attempts"])
+app.include_router(quizzes.router, tags=["quizzes"])
 
 @app.get("/")
 async def root():
@@ -87,79 +90,6 @@ async def login(user: UserLogin):
             "is_admin": db_user["is_admin"]
         }
     }
-
-@app.get("/api/quizzes", response_model=List[QuizResponse])
-async def get_quizzes():
-    try:
-        print("Starting to fetch quizzes...")
-        quizzes = []
-        cursor = quizzes_collection.find()
-        async for quiz_doc in cursor:
-            try:
-                print(f"Processing quiz: {quiz_doc}")
-                # Преобразуем _id в строку для правильной сериализации
-                quiz_doc["id"] = str(quiz_doc["_id"])
-                del quiz_doc["_id"]  # Удаляем _id, так как он уже преобразован в id
-                quiz = QuizResponse(**quiz_doc)
-                quizzes.append(quiz)
-                print(f"Successfully processed quiz: {quiz.title}")
-            except Exception as e:
-                print(f"Error processing quiz: {quiz_doc.get('title', 'Unknown')}")
-                print(f"Quiz document: {quiz_doc}")
-                print(f"Error details: {str(e)}")
-                continue
-        print(f"Total quizzes processed: {len(quizzes)}")
-        return quizzes
-    except Exception as e:
-        print(f"Error fetching quizzes: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to fetch quizzes: {str(e)}"
-        )
-
-@app.get("/api/quizzes/{quiz_id}", response_model=QuizResponse)
-async def get_quiz(quiz_id: str):
-    try:
-        print(f"Attempting to fetch quiz with ID: {quiz_id}")
-        quiz = await quizzes_collection.find_one({"_id": ObjectId(quiz_id)})
-        if not quiz:
-            print(f"Quiz not found with ID: {quiz_id}")
-            raise HTTPException(status_code=404, detail="Тест не найден")
-        print(f"Found quiz: {quiz}")
-        # Преобразуем _id в строку для правильной сериализации
-        quiz["id"] = str(quiz["_id"])
-        del quiz["_id"]  # Удаляем _id, так как он уже преобразован в id
-        return QuizResponse(**quiz)
-    except Exception as e:
-        print(f"Error fetching quiz {quiz_id}: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to fetch quiz: {str(e)}"
-        )
-
-# Защищенные маршруты для администраторов
-@app.post("/api/quizzes", response_model=QuizResponse, dependencies=[Depends(require_admin)])
-async def create_quiz(quiz: QuizBase):
-    result = await quizzes_collection.insert_one(quiz.dict())
-    created_quiz = await quizzes_collection.find_one({"_id": result.inserted_id})
-    return QuizDB(**created_quiz)
-
-@app.put("/api/quizzes/{quiz_id}", dependencies=[Depends(require_admin)])
-async def update_quiz(quiz_id: str, quiz: QuizBase):
-    result = await quizzes_collection.update_one(
-        {"_id": ObjectId(quiz_id)},
-        {"$set": quiz.dict()}
-    )
-    if result.modified_count == 0:
-        raise HTTPException(status_code=404, detail="Тест не найден")
-    return {"message": "Тест успешно обновлен"}
-
-@app.delete("/api/quizzes/{quiz_id}", dependencies=[Depends(require_admin)])
-async def delete_quiz(quiz_id: str):
-    result = await quizzes_collection.delete_one({"_id": ObjectId(quiz_id)})
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Тест не найден")
-    return {"message": "Тест успешно удален"}
 
 if __name__ == "__main__":
     import uvicorn

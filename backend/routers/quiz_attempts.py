@@ -14,7 +14,7 @@ router = APIRouter()
 # MongoDB connection
 MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
 client = AsyncIOMotorClient(MONGODB_URL)
-db = client.learning_path
+db = client.LearnApp
 
 class QuizAttemptCreate(BaseModel):
     quiz_id: str
