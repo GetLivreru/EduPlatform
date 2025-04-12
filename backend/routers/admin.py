@@ -1,7 +1,7 @@
-from fastapi import APIRouter, HTTPException, Body
+from fastapi import APIRouter, HTTPException, Body, Query, Path
 from motor.motor_asyncio import AsyncIOMotorClient
 from bson import ObjectId
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 import os
 from dotenv import load_dotenv
 from datetime import datetime
@@ -15,14 +15,17 @@ MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
 client = AsyncIOMotorClient(MONGODB_URL)
 db = client.LearnApp
 
-@router.post("/quizzes")
+@router.post("/quizzes", 
+            summary="Создать новый тест",
+            description="Создает новый тест с указанными параметрами",
+            response_description="Созданный тест с ID")
 async def create_quiz(
-    title: str = Body(...),
-    description: str = Body(...),
-    category: str = Body(...),
-    difficulty: str = Body(...),
-    time_limit: int = Body(...),
-    questions: List[dict] = Body(...)
+    title: str = Body(..., description="Название теста"),
+    description: str = Body(..., description="Описание теста"),
+    category: str = Body(..., description="Категория теста (например, 'Математика', 'Программирование')"),
+    difficulty: str = Body(..., description="Сложность теста ('Easy', 'Medium', 'Hard')"),
+    time_limit: int = Body(..., description="Ограничение времени на тест в минутах"),
+    questions: List[dict] = Body(..., description="Список вопросов с вариантами ответов")
 ):
     try:
         quiz = {
@@ -43,15 +46,18 @@ async def create_quiz(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.put("/quizzes/{quiz_id}")
+@router.put("/quizzes/{quiz_id}",
+           summary="Обновить тест",
+           description="Обновляет существующий тест по ID",
+           response_description="Обновленный тест")
 async def update_quiz(
-    quiz_id: str,
-    title: Optional[str] = Body(None),
-    description: Optional[str] = Body(None),
-    category: Optional[str] = Body(None),
-    difficulty: Optional[str] = Body(None),
-    time_limit: Optional[int] = Body(None),
-    questions: Optional[List[dict]] = Body(None)
+    quiz_id: str = Path(..., description="ID теста для обновления"),
+    title: Optional[str] = Body(None, description="Новое название теста"),
+    description: Optional[str] = Body(None, description="Новое описание теста"),
+    category: Optional[str] = Body(None, description="Новая категория теста"),
+    difficulty: Optional[str] = Body(None, description="Новая сложность теста"),
+    time_limit: Optional[int] = Body(None, description="Новое ограничение времени в минутах"),
+    questions: Optional[List[dict]] = Body(None, description="Новый список вопросов")
 ):
     try:
         update_data = {
@@ -86,8 +92,11 @@ async def update_quiz(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.delete("/quizzes/{quiz_id}")
-async def delete_quiz(quiz_id: str):
+@router.delete("/quizzes/{quiz_id}",
+              summary="Удалить тест",
+              description="Удаляет тест по ID",
+              response_description="Статус операции")
+async def delete_quiz(quiz_id: str = Path(..., description="ID теста для удаления")):
     try:
         result = await db.quizzes.delete_one({"_id": ObjectId(quiz_id)})
         
@@ -98,7 +107,10 @@ async def delete_quiz(quiz_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/quizzes/stats")
+@router.get("/quizzes/stats",
+           summary="Статистика тестов",
+           description="Возвращает общую статистику по тестам",
+           response_description="Статистика по категориям и сложности")
 async def get_quiz_stats():
     try:
         total_quizzes = await db.quizzes.count_documents({})
@@ -117,7 +129,10 @@ async def get_quiz_stats():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/users")
+@router.get("/users",
+           summary="Список пользователей",
+           description="Возвращает список всех пользователей",
+           response_description="Массив пользователей")
 async def get_users():
     try:
         users = await db.users.find().to_list(None)
@@ -129,8 +144,11 @@ async def get_users():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.delete("/users/{user_id}")
-async def delete_user(user_id: str):
+@router.delete("/users/{user_id}",
+              summary="Удалить пользователя",
+              description="Удаляет пользователя по ID",
+              response_description="Статус операции")
+async def delete_user(user_id: str = Path(..., description="ID пользователя для удаления")):
     try:
         result = await db.users.delete_one({"_id": ObjectId(user_id)})
         
@@ -141,7 +159,10 @@ async def delete_user(user_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/quizzes")
+@router.get("/quizzes",
+           summary="Список тестов",
+           description="Возвращает список всех тестов",
+           response_description="Массив тестов")
 async def get_quizzes():
     try:
         quizzes = await db.quizzes.find().to_list(None)
@@ -153,8 +174,11 @@ async def get_quizzes():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/quizzes/{quiz_id}")
-async def get_quiz(quiz_id: str):
+@router.get("/quizzes/{quiz_id}",
+           summary="Получить тест",
+           description="Возвращает тест по ID",
+           response_description="Детальная информация о тесте")
+async def get_quiz(quiz_id: str = Path(..., description="ID теста для получения")):
     try:
         print(f"Admin endpoint: Attempting to fetch quiz with ID: {quiz_id}")
         quiz = await db.quizzes.find_one({"_id": ObjectId(quiz_id)})

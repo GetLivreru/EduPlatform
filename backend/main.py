@@ -1,5 +1,7 @@
 from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
+from fastapi.openapi.utils import get_openapi
 from motor.motor_asyncio import AsyncIOMotorClient
 from models import QuizBase, QuizQuestion, UserCreate, UserLogin, UserResponse, QuizDB, QuizResponse, UserInDB, QuizAttempt
 from middleware import create_access_token, get_current_user, require_admin
@@ -10,7 +12,13 @@ from typing import List
 from routers import quiz_attempts, quizzes, admin
 import os
 
-app = FastAPI(title="Educational Quiz Platform")
+app = FastAPI(
+    title="Educational Quiz Platform",
+    description="REST API для платформы образовательных тестов и квизов",
+    version="1.0.0",
+    docs_url=None,  # Отключаем стандартный /docs endpoint
+    redoc_url=None  # Отключаем стандартный /redoc endpoint
+)
 
 # Configure CORS
 app.add_middleware(
@@ -40,11 +48,47 @@ app.include_router(quiz_attempts.router, prefix="/api/quiz-attempts", tags=["qui
 app.include_router(quizzes.router, tags=["quizzes"])
 app.include_router(admin.router, prefix="/admin", tags=["admin"])
 
-@app.get("/")
+# Кастомные эндпоинты для документации
+@app.get("/docs", include_in_schema=False)
+async def custom_swagger_ui_html():
+    return get_swagger_ui_html(
+        openapi_url="/openapi.json",
+        title="Quiz Platform API Documentation",
+        swagger_js_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js",
+        swagger_css_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css",
+        swagger_favicon_url="/favicon.ico"
+    )
+
+@app.get("/redoc", include_in_schema=False)
+async def redoc_html():
+    return get_redoc_html(
+        openapi_url="/openapi.json",
+        title="Quiz Platform API Documentation - ReDoc",
+        redoc_js_url="https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.js"
+    )
+
+@app.get("/openapi.json", include_in_schema=False)
+async def get_open_api_endpoint():
+    openapi_schema = get_openapi(
+        title="Educational Quiz Platform API",
+        version="1.0.0",
+        description="REST API для платформы образовательных тестов и квизов.",
+        routes=app.routes,
+    )
+    return openapi_schema
+
+@app.get("/",
+        summary="Проверка работоспособности API",
+        description="Возвращает приветственное сообщение для проверки доступности API",
+        tags=["статус"])
 async def root():
     return {"message": "Welcome to Educational Quiz Platform API"}
 
-@app.post("/api/register", response_model=UserResponse)
+@app.post("/api/register", 
+         response_model=UserResponse,
+         summary="Регистрация пользователя",
+         description="Регистрирует нового пользователя в системе",
+         tags=["аутентификация"])
 async def register(user: UserCreate):
     # Проверяем, существует ли уже пользователь
     existing_user = await users_collection.find_one({"login": user.login})
@@ -67,7 +111,10 @@ async def register(user: UserCreate):
     
     return UserResponse(**created_user)
 
-@app.post("/api/login")
+@app.post("/api/login",
+         summary="Вход в систему",
+         description="Авторизует пользователя и возвращает токен доступа",
+         tags=["аутентификация"])
 async def login(user: UserLogin):
     # Находим пользователя
     db_user = await users_collection.find_one({"login": user.login})

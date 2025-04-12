@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaBook, FaClock, FaQuestion, FaPlay, FaExclamationCircle } from 'react-icons/fa';
+import { FaBook, FaClock, FaQuestion, FaPlay, FaExclamationCircle, FaSignInAlt, FaUserPlus, FaTimes } from 'react-icons/fa';
 import { getQuizzes, Quiz } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 interface QuizListProps {
     selectedSubject: string;
@@ -12,7 +13,10 @@ const QuizList: React.FC<QuizListProps> = ({ selectedSubject, selectedDifficulty
     const [quizzes, setQuizzes] = useState<Quiz[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [showAuthModal, setShowAuthModal] = useState(false);
+    const [selectedQuizId, setSelectedQuizId] = useState<string | null>(null);
     const navigate = useNavigate();
+    const { user } = useAuth();
 
     useEffect(() => {
         const fetchQuizzes = async () => {
@@ -32,7 +36,21 @@ const QuizList: React.FC<QuizListProps> = ({ selectedSubject, selectedDifficulty
     }, []);
 
     const handleStartQuiz = (quizId: string) => {
-        navigate(`/quiz/${quizId}`);
+        if (user) {
+            navigate(`/quiz/${quizId}`);
+        } else {
+            // Для незарегистрированных пользователей показываем модальное окно
+            setSelectedQuizId(quizId);
+            setShowAuthModal(true);
+        }
+    };
+
+    const handleLogin = () => {
+        navigate('/login');
+    };
+
+    const handleRegister = () => {
+        navigate('/register');
     };
 
     const filteredQuizzes = quizzes.filter(quiz => {
@@ -102,6 +120,44 @@ const QuizList: React.FC<QuizListProps> = ({ selectedSubject, selectedDifficulty
                             </div>
                         </div>
                     ))}
+                </div>
+            )}
+
+            {/* Модальное окно авторизации */}
+            {showAuthModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xl font-semibold text-gray-900">Требуется авторизация</h3>
+                            <button 
+                                onClick={() => setShowAuthModal(false)}
+                                className="text-gray-500 hover:text-gray-700"
+                            >
+                                <FaTimes size={20} />
+                            </button>
+                        </div>
+                        <div className="mb-4">
+                            <p className="text-gray-700 mb-4">
+                                Для прохождения теста необходимо войти в систему или зарегистрироваться.
+                            </p>
+                            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                                <button
+                                    onClick={handleLogin}
+                                    className="flex items-center justify-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                                >
+                                    <FaSignInAlt className="mr-2" />
+                                    Войти
+                                </button>
+                                <button
+                                    onClick={handleRegister}
+                                    className="flex items-center justify-center px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                                >
+                                    <FaUserPlus className="mr-2" />
+                                    Регистрация
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, Body
+from fastapi import APIRouter, HTTPException, Depends, Body, Path
 from motor.motor_asyncio import AsyncIOMotorClient
 from bson import ObjectId
 import os
@@ -17,7 +17,11 @@ MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
 client = AsyncIOMotorClient(MONGODB_URL)
 db = client.LearnApp
 
-@router.get("/api/quizzes", response_model=List[QuizResponse])
+@router.get("/api/quizzes", 
+           response_model=List[QuizResponse],
+           summary="Получить список тестов",
+           description="Возвращает список всех доступных тестов",
+           tags=["quizzes"])
 async def get_quizzes():
     try:
         print("Starting to fetch quizzes...")
@@ -45,8 +49,12 @@ async def get_quizzes():
             detail=f"Failed to fetch quizzes: {str(e)}"
         )
 
-@router.get("/api/quizzes/{quiz_id}", response_model=QuizResponse)
-async def get_quiz(quiz_id: str):
+@router.get("/api/quizzes/{quiz_id}", 
+           response_model=QuizResponse,
+           summary="Получить тест по ID",
+           description="Возвращает подробную информацию о тесте по его ID",
+           tags=["quizzes"])
+async def get_quiz(quiz_id: str = Path(..., description="ID теста для получения")):
     try:
         print(f"Attempting to fetch quiz with ID: {quiz_id}")
         quiz = await db.quizzes.find_one({"_id": ObjectId(quiz_id)})
@@ -66,14 +74,18 @@ async def get_quiz(quiz_id: str):
         )
 
 # Защищенные маршруты для администраторов
-@router.post("/api/quizzes", dependencies=[Depends(require_admin)])
+@router.post("/api/quizzes", 
+            dependencies=[Depends(require_admin)],
+            summary="Создать новый тест [админ]",
+            description="Создает новый тест (требуются права администратора)",
+            tags=["quizzes-admin"])
 async def create_quiz(
-    title: str = Body(...),
-    description: str = Body(...),
-    category: str = Body(...),
-    difficulty: str = Body(...),
-    time_limit: int = Body(...),
-    questions: List[Dict] = Body(...)
+    title: str = Body(..., description="Название теста"),
+    description: str = Body(..., description="Описание теста"),
+    category: str = Body(..., description="Категория теста"),
+    difficulty: str = Body(..., description="Сложность теста (Easy, Medium, Hard)"),
+    time_limit: int = Body(..., description="Ограничение времени в минутах"),
+    questions: List[Dict] = Body(..., description="Список вопросов и вариантов ответов")
 ):
     try:
         quiz = {
@@ -95,15 +107,19 @@ async def create_quiz(
         print(f"Error creating quiz: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.put("/api/quizzes/{quiz_id}", dependencies=[Depends(require_admin)])
+@router.put("/api/quizzes/{quiz_id}", 
+           dependencies=[Depends(require_admin)],
+           summary="Обновить тест [админ]",
+           description="Обновляет существующий тест (требуются права администратора)",
+           tags=["quizzes-admin"])
 async def update_quiz(
-    quiz_id: str,
-    title: Optional[str] = Body(None),
-    description: Optional[str] = Body(None),
-    category: Optional[str] = Body(None),
-    difficulty: Optional[str] = Body(None),
-    time_limit: Optional[int] = Body(None),
-    questions: Optional[List[Dict]] = Body(None)
+    quiz_id: str = Path(..., description="ID теста для обновления"),
+    title: Optional[str] = Body(None, description="Новое название теста"),
+    description: Optional[str] = Body(None, description="Новое описание теста"),
+    category: Optional[str] = Body(None, description="Новая категория теста"),
+    difficulty: Optional[str] = Body(None, description="Новая сложность теста"),
+    time_limit: Optional[int] = Body(None, description="Новое ограничение времени"),
+    questions: Optional[List[Dict]] = Body(None, description="Новый список вопросов")
 ):
     try:
         # Создаем словарь для обновления, включая только переданные поля
@@ -138,8 +154,12 @@ async def update_quiz(
         print(f"Error updating quiz {quiz_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.delete("/api/quizzes/{quiz_id}", dependencies=[Depends(require_admin)])
-async def delete_quiz(quiz_id: str):
+@router.delete("/api/quizzes/{quiz_id}", 
+              dependencies=[Depends(require_admin)],
+              summary="Удалить тест [админ]",
+              description="Удаляет тест по ID (требуются права администратора)",
+              tags=["quizzes-admin"])
+async def delete_quiz(quiz_id: str = Path(..., description="ID теста для удаления")):
     try:
         result = await db.quizzes.delete_one({"_id": ObjectId(quiz_id)})
         if result.deleted_count == 0:
