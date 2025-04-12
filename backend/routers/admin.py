@@ -145,10 +145,26 @@ async def delete_user(user_id: str):
 async def get_quizzes():
     try:
         quizzes = await db.quizzes.find().to_list(None)
-        # Convert ObjectId to string for JSON serialization
+        # Convert ObjectId to string for JSON serialization 
         for quiz in quizzes:
             quiz["_id"] = str(quiz["_id"])
         
         return quizzes
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/quizzes/{quiz_id}")
+async def get_quiz(quiz_id: str):
+    try:
+        print(f"Admin endpoint: Attempting to fetch quiz with ID: {quiz_id}")
+        quiz = await db.quizzes.find_one({"_id": ObjectId(quiz_id)})
+        if not quiz:
+            raise HTTPException(status_code=404, detail="Quiz not found")
+            
+        # Convert ObjectId to string for JSON serialization
+        quiz["_id"] = str(quiz["_id"])
+        
+        return quiz
+    except Exception as e:
+        print(f"Error fetching quiz {quiz_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e)) 

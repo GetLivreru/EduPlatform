@@ -66,7 +66,7 @@ const QuizList: React.FC<QuizListProps> = ({ selectedSubject, selectedDifficulty
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-4">
                     {filteredQuizzes.map((quiz) => (
                         <div
-                            key={quiz.id}
+                            key={quiz._id}
                             className="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden"
                         >
                             <div className="p-6">
@@ -85,14 +85,14 @@ const QuizList: React.FC<QuizListProps> = ({ selectedSubject, selectedDifficulty
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <span className={`px-3 py-1 rounded-full text-sm font-semibold
-                                        ${quiz.difficulty === 'easy' ? 'bg-green-100 text-green-800' :
-                                        quiz.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                                        ${quiz.difficulty?.toLowerCase() === 'easy' ? 'bg-green-100 text-green-800' :
+                                        quiz.difficulty?.toLowerCase() === 'medium' ? 'bg-yellow-100 text-yellow-800' :
                                         'bg-red-100 text-red-800'}`}>
-                                        {quiz.difficulty === 'easy' ? 'Легкий' :
-                                         quiz.difficulty === 'medium' ? 'Средний' : 'Сложный'}
+                                        {quiz.difficulty?.toLowerCase() === 'easy' ? 'Легкий' :
+                                         quiz.difficulty?.toLowerCase() === 'medium' ? 'Средний' : 'Сложный'}
                                     </span>
                                     <button
-                                        onClick={() => handleStartQuiz(quiz.id)}
+                                        onClick={() => handleStartQuiz(quiz._id)}
                                         className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-300"
                                     >
                                         <FaPlay className="mr-2" />

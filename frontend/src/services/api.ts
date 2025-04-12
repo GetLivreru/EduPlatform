@@ -96,7 +96,11 @@ export const getQuizzes = async (): Promise<Quiz[]> => {
 
 export const getQuiz = async (id: string): Promise<Quiz> => {
     try {
-        const response = await api.get(`/api/quizzes/${id}`);
+        console.log(`Fetching quiz with ID: ${id}`);
+        if (!id || id === 'undefined') {
+            throw new Error('Invalid quiz ID');
+        }
+        const response = await api.get(`/admin/quizzes/${id}`);
         return response.data;
     } catch (error) {
         console.error('Error fetching quiz:', error);
@@ -107,6 +111,7 @@ export const getQuiz = async (id: string): Promise<Quiz> => {
 // Quiz attempt functions
 export const startQuiz = async (quizId: string) => {
     try {
+        console.log(`Starting quiz with ID: ${quizId}`);
         const response = await api.post(`/api/quiz-attempts`, { quiz_id: quizId });
         return response.data;
     } catch (error) {
@@ -117,6 +122,7 @@ export const startQuiz = async (quizId: string) => {
 
 export const submitAnswer = async (attemptId: string, questionIndex: number, answer: number) => {
     try {
+        console.log(`Submitting answer for attempt ${attemptId}, question ${questionIndex}, answer ${answer}`);
         const response = await api.post(`/api/quiz-attempts/${attemptId}/answer`, {
             question_index: questionIndex,
             answer: answer
@@ -130,7 +136,8 @@ export const submitAnswer = async (attemptId: string, questionIndex: number, ans
 
 export const finishQuiz = async (attemptId: string) => {
     try {
-        const response = await api.post(`/api/attempts/${attemptId}/finish`);
+        console.log(`Finishing quiz attempt ${attemptId}`);
+        const response = await api.post(`/api/quiz-attempts/${attemptId}/finish`);
         return response.data;
     } catch (error) {
         console.error('Error finishing quiz:', error);
@@ -140,7 +147,8 @@ export const finishQuiz = async (attemptId: string) => {
 
 export const getAttempt = async (attemptId: string): Promise<QuizAttempt> => {
     try {
-        const response = await api.get(`/admin/attempts/${attemptId}`);
+        console.log(`Getting attempt ${attemptId}`);
+        const response = await api.get(`/api/quiz-attempts/${attemptId}`);
         return response.data;
     } catch (error) {
         console.error('Error getting attempt:', error);
