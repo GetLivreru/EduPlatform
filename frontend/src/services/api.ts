@@ -140,7 +140,7 @@ export const finishQuiz = async (attemptId: string) => {
 
 export const getAttempt = async (attemptId: string): Promise<QuizAttempt> => {
     try {
-        const response = await api.get(`/api/attempts/${attemptId}`);
+        const response = await api.get(`/admin/attempts/${attemptId}`);
         return response.data;
     } catch (error) {
         console.error('Error getting attempt:', error);
@@ -149,9 +149,9 @@ export const getAttempt = async (attemptId: string): Promise<QuizAttempt> => {
 };
 
 // Admin functions
-export const createQuiz = async (quiz: Omit<Quiz, 'id'>): Promise<Quiz> => {
+export const createQuiz = async (quiz: Omit<Quiz, 'id' | '_id'>): Promise<Quiz> => {
     try {
-        const response = await api.post('/api/quizzes', quiz);
+        const response = await api.post('/admin/quizzes', quiz);
         return response.data;
     } catch (error) {
         console.error('Error creating quiz:', error);
@@ -159,9 +159,9 @@ export const createQuiz = async (quiz: Omit<Quiz, 'id'>): Promise<Quiz> => {
     }
 };
 
-export const updateQuiz = async (quizId: string, quiz: Partial<Quiz>): Promise<Quiz> => {
+export const updateQuiz = async (quizId: string, quiz: Partial<Omit<Quiz, 'id' | '_id'>>): Promise<Quiz> => {
     try {
-        const response = await api.put(`/api/quizzes/${quizId}`, quiz);
+        const response = await api.put(`/admin/quizzes/${quizId}`, quiz);
         return response.data;
     } catch (error) {
         console.error('Error updating quiz:', error);

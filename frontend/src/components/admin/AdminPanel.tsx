@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { FaUsers, FaBook, FaEdit, FaTrash, FaPlus } from 'react-icons/fa';
+import { FaUsers, FaBook, FaEdit, FaTrash, FaPlus, FaEye, FaTimes } from 'react-icons/fa';
 import { getQuizzes, getUsers, deleteUser, deleteQuiz } from '../../services/api';
 import { Quiz } from '../../services/api';
+import { useNavigate } from 'react-router-dom';
 
 const AdminPanel: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'users' | 'quizzes'>('users');
@@ -9,6 +10,9 @@ const AdminPanel: React.FC = () => {
     const [users, setUsers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const navigate = useNavigate();
+    const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null);
+    const [showQuizModal, setShowQuizModal] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -54,13 +58,22 @@ const AdminPanel: React.FC = () => {
     };
 
     const handleEditQuiz = (quizId: string) => {
-        // TODO: Добавить редактирование теста
-        console.log('Редактирование теста:', quizId);
+        navigate(`/admin/quizzes/edit/${quizId}`);
     };
 
     const handleEditUser = (userId: string) => {
         // TODO: Добавить редактирование пользователя
         console.log('Редактирование пользователя:', userId);
+    };
+
+    const handleViewQuiz = (quiz: Quiz) => {
+        setSelectedQuiz(quiz);
+        setShowQuizModal(true);
+    };
+
+    const closeQuizModal = () => {
+        setSelectedQuiz(null);
+        setShowQuizModal(false);
     };
 
     return (
@@ -166,7 +179,10 @@ const AdminPanel: React.FC = () => {
             ) : (
                 <div className="bg-white rounded-lg shadow overflow-hidden">
                     <div className="p-4 border-b border-gray-200">
-                        <button className="bg-green-500 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-green-600">
+                        <button 
+                            onClick={() => navigate('/admin/quizzes/new')}
+                            className="bg-green-500 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-green-600"
+                        >
                             <FaPlus />
                             <span>Добавить тест</span>
                         </button>
@@ -215,6 +231,12 @@ const AdminPanel: React.FC = () => {
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <button
+                                            onClick={() => handleViewQuiz(quiz)}
+                                            className="text-gray-600 hover:text-gray-900 mr-4"
+                                        >
+                                            <FaEye />
+                                        </button>
+                                        <button
                                             onClick={() => handleEditQuiz(quiz._id)}
                                             className="text-blue-600 hover:text-blue-900 mr-4"
                                         >
@@ -231,6 +253,100 @@ const AdminPanel: React.FC = () => {
                             ))}
                         </tbody>
                     </table>
+                </div>
+            )}
+            
+            {/* Модальное окно для просмотра подробностей квиза */}
+            {showQuizModal && selectedQuiz && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                        <div className="flex justify-between items-center border-b border-gray-200 px-6 py-4">
+                            <h2 className="text-xl font-bold text-gray-900">Просмотр теста</h2>
+                            <button
+                                onClick={closeQuizModal}
+                                className="text-gray-500 hover:text-gray-700"
+                            >
+                                <FaTimes size={20} />
+                            </button>
+                        </div>
+                        
+                        <div className="p-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                <div>
+                                    <h3 className="text-sm font-medium text-gray-500">Название</h3>
+                                    <p className="text-lg font-medium text-gray-900">{selectedQuiz.title}</p>
+                                </div>
+                                
+                                <div>
+                                    <h3 className="text-sm font-medium text-gray-500">Категория</h3>
+                                    <p className="text-lg font-medium text-gray-900">{selectedQuiz.category}</p>
+                                </div>
+                                
+                                <div>
+                                    <h3 className="text-sm font-medium text-gray-500">Сложность</h3>
+                                    <p className="text-lg font-medium text-gray-900">{selectedQuiz.difficulty}</p>
+                                </div>
+                                
+                                <div>
+                                    <h3 className="text-sm font-medium text-gray-500">Время (минуты)</h3>
+                                    <p className="text-lg font-medium text-gray-900">{selectedQuiz.time_limit}</p>
+                                </div>
+                                
+                                <div className="md:col-span-2">
+                                    <h3 className="text-sm font-medium text-gray-500">Описание</h3>
+                                    <p className="text-base text-gray-900">{selectedQuiz.description}</p>
+                                </div>
+                            </div>
+                            
+                            <h3 className="text-lg font-bold text-gray-900 mb-4 border-b border-gray-200 pb-2">
+                                Вопросы ({selectedQuiz.questions.length})
+                            </h3>
+                            
+                            <div className="space-y-6">
+                                {selectedQuiz.questions.map((question, index) => (
+                                    <div key={index} className="border border-gray-200 rounded-lg p-4">
+                                        <h4 className="font-medium text-gray-900 mb-2">
+                                            Вопрос {index + 1}: {question.text}
+                                        </h4>
+                                        
+                                        <ul className="space-y-1 mt-2">
+                                            {question.options.map((option, optIndex) => (
+                                                <li
+                                                    key={optIndex}
+                                                    className={`py-1 px-2 rounded ${
+                                                        optIndex === question.correct_answer
+                                                            ? 'bg-green-100 text-green-800'
+                                                            : ''
+                                                    }`}
+                                                >
+                                                    {optIndex === question.correct_answer && '✓ '}
+                                                    {option}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        
+                        <div className="border-t border-gray-200 px-6 py-4 flex justify-end">
+                            <button
+                                onClick={() => {
+                                    closeQuizModal();
+                                    handleEditQuiz(selectedQuiz._id);
+                                }}
+                                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mr-2"
+                            >
+                                Редактировать
+                            </button>
+                            <button
+                                onClick={closeQuizModal}
+                                className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300"
+                            >
+                                Закрыть
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

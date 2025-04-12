@@ -193,6 +193,8 @@ const App: React.FC = () => {
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Register />} />
                         <Route path="/quiz/:quizId" element={<QuizAttempt />} />
+                        <Route path="/admin/quizzes/new" element={<QuizManager />} />
+                        <Route path="/admin/quizzes/edit/:quizId" element={<QuizManager />} />
                         <Route path="/admin/quizzes" element={<QuizManager />} />
                         <Route
                             path="/admin"
