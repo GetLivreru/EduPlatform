@@ -9,7 +9,7 @@ async def check_db():
     # Подключение к MongoDB
     MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
     client = AsyncIOMotorClient(MONGODB_URL)
-    db = client.learning_path
+    db = client.LearnApp
 
     # Проверяем коллекцию quizzes
     quizzes = await db.quizzes.find().to_list(length=100)
