@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FaUsers, FaBook, FaEdit, FaTrash, FaPlus } from 'react-icons/fa';
-import { getQuizzes, getUsers, deleteUser } from '../../services/api';
+import { getQuizzes, getUsers, deleteUser, deleteQuiz } from '../../services/api';
 import { Quiz } from '../../services/api';
 
 const AdminPanel: React.FC = () => {
@@ -34,8 +34,8 @@ const AdminPanel: React.FC = () => {
     const handleDeleteQuiz = async (quizId: string) => {
         if (window.confirm('Вы уверены, что хотите удалить этот тест?')) {
             try {
-                // TODO: Добавить удаление теста
-                setQuizzes(quizzes.filter(quiz => quiz.id !== quizId));
+                await deleteQuiz(quizId);
+                setQuizzes(quizzes.filter(quiz => quiz._id !== quizId));
             } catch (err) {
                 setError('Ошибка при удалении теста');
             }
@@ -193,7 +193,7 @@ const AdminPanel: React.FC = () => {
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                             {quizzes.map((quiz) => (
-                                <tr key={quiz.id}>
+                                <tr key={quiz._id}>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="text-sm font-medium text-gray-900">{quiz.title}</div>
                                     </td>
@@ -215,13 +215,13 @@ const AdminPanel: React.FC = () => {
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <button
-                                            onClick={() => handleEditQuiz(quiz.id)}
+                                            onClick={() => handleEditQuiz(quiz._id)}
                                             className="text-blue-600 hover:text-blue-900 mr-4"
                                         >
                                             <FaEdit />
                                         </button>
                                         <button
-                                            onClick={() => handleDeleteQuiz(quiz.id)}
+                                            onClick={() => handleDeleteQuiz(quiz._id)}
                                             className="text-red-600 hover:text-red-900"
                                         >
                                             <FaTrash />

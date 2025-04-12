@@ -139,4 +139,16 @@ async def delete_user(user_id: str):
             
         return {"status": "success", "message": "User deleted successfully"}
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/quizzes")
+async def get_quizzes():
+    try:
+        quizzes = await db.quizzes.find().to_list(None)
+        # Convert ObjectId to string for JSON serialization
+        for quiz in quizzes:
+            quiz["_id"] = str(quiz["_id"])
+        
+        return quizzes
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) 

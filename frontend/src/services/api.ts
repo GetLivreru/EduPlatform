@@ -49,6 +49,7 @@ export interface QuizQuestion {
 
 export interface Quiz {
     id: string;
+    _id: string; // MongoDB ID
     title: string;
     description: string;
     category: string;
@@ -85,7 +86,7 @@ export interface QuizAttempt {
 // Quiz related functions
 export const getQuizzes = async (): Promise<Quiz[]> => {
     try {
-        const response = await api.get('/api/quizzes');
+        const response = await api.get('/admin/quizzes');
         return response.data;
     } catch (error) {
         console.error('Error fetching quizzes:', error);
@@ -170,7 +171,7 @@ export const updateQuiz = async (quizId: string, quiz: Partial<Quiz>): Promise<Q
 
 export const deleteQuiz = async (quizId: string): Promise<void> => {
     try {
-        await api.delete(`/api/quizzes/${quizId}`);
+        await api.delete(`/admin/quizzes/${quizId}`);
     } catch (error) {
         console.error('Error deleting quiz:', error);
         throw error;
