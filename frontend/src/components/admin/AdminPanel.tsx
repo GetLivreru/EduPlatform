@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FaUsers, FaBook, FaEdit, FaTrash, FaPlus } from 'react-icons/fa';
-import { getQuizzes } from '../../services/api';
+import { getQuizzes, getUsers, deleteUser } from '../../services/api';
 import { Quiz } from '../../services/api';
 
 const AdminPanel: React.FC = () => {
@@ -18,12 +18,8 @@ const AdminPanel: React.FC = () => {
                     const quizzesData = await getQuizzes();
                     setQuizzes(quizzesData);
                 } else {
-                    // TODO: Добавить получение списка пользователей
-                    const mockUsers = [
-                        { id: '1', name: 'Иван Иванов', login: 'ivan@example.com', is_admin: true },
-                        { id: '2', name: 'Петр Петров', login: 'petr@example.com', is_admin: false }
-                    ];
-                    setUsers(mockUsers);
+                    const usersData = await getUsers();
+                    setUsers(usersData);
                 }
             } catch (err) {
                 setError('Ошибка при загрузке данных');
@@ -49,8 +45,8 @@ const AdminPanel: React.FC = () => {
     const handleDeleteUser = async (userId: string) => {
         if (window.confirm('Вы уверены, что хотите удалить этого пользователя?')) {
             try {
-                // TODO: Добавить удаление пользователя
-                setUsers(users.filter(user => user.id !== userId));
+                await deleteUser(userId);
+                setUsers(users.filter(user => user._id !== userId));
             } catch (err) {
                 setError('Ошибка при удалении пользователя');
             }
@@ -134,7 +130,7 @@ const AdminPanel: React.FC = () => {
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                             {users.map((user) => (
-                                <tr key={user.id}>
+                                <tr key={user._id}>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="text-sm font-medium text-gray-900">{user.name}</div>
                                     </td>
@@ -150,13 +146,13 @@ const AdminPanel: React.FC = () => {
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <button
-                                            onClick={() => handleEditUser(user.id)}
+                                            onClick={() => handleEditUser(user._id)}
                                             className="text-blue-600 hover:text-blue-900 mr-4"
                                         >
                                             <FaEdit />
                                         </button>
                                         <button
-                                            onClick={() => handleDeleteUser(user.id)}
+                                            onClick={() => handleDeleteUser(user._id)}
                                             className="text-red-600 hover:text-red-900"
                                         >
                                             <FaTrash />

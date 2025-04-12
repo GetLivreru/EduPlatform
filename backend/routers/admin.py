@@ -13,7 +13,7 @@ router = APIRouter()
 # MongoDB connection
 MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
 client = AsyncIOMotorClient(MONGODB_URL)
-db = client.learning_path
+db = client.LearnApp
 
 @router.post("/quizzes")
 async def create_quiz(
@@ -114,5 +114,29 @@ async def get_quiz_stats():
             "by_category": quizzes_by_category,
             "by_difficulty": quizzes_by_difficulty
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/users")
+async def get_users():
+    try:
+        users = await db.users.find().to_list(None)
+        # Convert ObjectId to string for JSON serialization
+        for user in users:
+            user["_id"] = str(user["_id"])
+        
+        return users
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/users/{user_id}")
+async def delete_user(user_id: str):
+    try:
+        result = await db.users.delete_one({"_id": ObjectId(user_id)})
+        
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="User not found")
+            
+        return {"status": "success", "message": "User deleted successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) 

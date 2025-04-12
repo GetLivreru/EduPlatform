@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from passlib.context import CryptContext
 from bson import ObjectId
 from typing import List
-from routers import quiz_attempts, quizzes
+from routers import quiz_attempts, quizzes, admin
 import os
 
 app = FastAPI(title="Educational Quiz Platform")
@@ -38,6 +38,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # Include routers
 app.include_router(quiz_attempts.router, prefix="/api/quiz-attempts", tags=["quiz-attempts"])
 app.include_router(quizzes.router, tags=["quizzes"])
+app.include_router(admin.router, prefix="/admin", tags=["admin"])
 
 @app.get("/")
 async def root():

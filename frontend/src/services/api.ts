@@ -180,7 +180,7 @@ export const deleteQuiz = async (quizId: string): Promise<void> => {
 // User functions
 export const getUsers = async (): Promise<User[]> => {
     try {
-        const response = await api.get('/api/users');
+        const response = await api.get('/admin/users');
         return response.data;
     } catch (error) {
         console.error('Error getting users:', error);
@@ -190,7 +190,7 @@ export const getUsers = async (): Promise<User[]> => {
 
 export const getUser = async (userId: string): Promise<User> => {
     try {
-        const response = await api.get(`/api/users/${userId}`);
+        const response = await api.get(`/admin/users/${userId}`);
         return response.data;
     } catch (error) {
         console.error('Error getting user:', error);
@@ -200,7 +200,7 @@ export const getUser = async (userId: string): Promise<User> => {
 
 export const createUser = async (user: Omit<User, 'id' | 'created_at'>): Promise<User> => {
     try {
-        const response = await api.post('/api/users', user);
+        const response = await api.post('/admin/users', user);
         return response.data;
     } catch (error) {
         console.error('Error creating user:', error);
@@ -210,7 +210,7 @@ export const createUser = async (user: Omit<User, 'id' | 'created_at'>): Promise
 
 export const updateUser = async (userId: string, user: Partial<User>): Promise<User> => {
     try {
-        const response = await api.put(`/api/users/${userId}`, user);
+        const response = await api.put(`/admin/users/${userId}`, user);
         return response.data;
     } catch (error) {
         console.error('Error updating user:', error);
@@ -220,7 +220,7 @@ export const updateUser = async (userId: string, user: Partial<User>): Promise<U
 
 export const deleteUser = async (userId: string): Promise<void> => {
     try {
-        await api.delete(`/api/users/${userId}`);
+        await api.delete(`/admin/users/${userId}`);
     } catch (error) {
         console.error('Error deleting user:', error);
         throw error;
