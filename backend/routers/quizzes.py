@@ -24,26 +24,18 @@ db = client.LearnApp
            tags=["quizzes"])
 async def get_quizzes():
     try:
-        print("Starting to fetch quizzes...")
         quizzes = []
         cursor = db.quizzes.find()
         async for quiz_doc in cursor:
             try:
-                print(f"Processing quiz: {quiz_doc}")
                 # Преобразуем _id в строку для правильной сериализации
                 quiz_doc["id"] = str(quiz_doc["_id"])
                 del quiz_doc["_id"]  # Удаляем _id, так как он уже преобразован в id
                 quizzes.append(quiz_doc)
-                print(f"Successfully processed quiz: {quiz_doc.get('title', 'Unknown')}")
             except Exception as e:
-                print(f"Error processing quiz: {quiz_doc.get('title', 'Unknown')}")
-                print(f"Quiz document: {quiz_doc}")
-                print(f"Error details: {str(e)}")
                 continue
-        print(f"Total quizzes processed: {len(quizzes)}")
         return quizzes
     except Exception as e:
-        print(f"Error fetching quizzes: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail=f"Failed to fetch quizzes: {str(e)}"
@@ -56,18 +48,14 @@ async def get_quizzes():
            tags=["quizzes"])
 async def get_quiz(quiz_id: str = Path(..., description="ID теста для получения")):
     try:
-        print(f"Attempting to fetch quiz with ID: {quiz_id}")
         quiz = await db.quizzes.find_one({"_id": ObjectId(quiz_id)})
         if not quiz:
-            print(f"Quiz not found with ID: {quiz_id}")
             raise HTTPException(status_code=404, detail="Тест не найден")
-        print(f"Found quiz: {quiz}")
         # Преобразуем _id в строку для правильной сериализации
         quiz["id"] = str(quiz["_id"])
         del quiz["_id"]  # Удаляем _id, так как он уже преобразован в id
         return quiz
     except Exception as e:
-        print(f"Error fetching quiz {quiz_id}: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail=f"Failed to fetch quiz: {str(e)}"
@@ -104,7 +92,6 @@ async def create_quiz(
         
         return quiz
     except Exception as e:
-        print(f"Error creating quiz: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.put("/api/quizzes/{quiz_id}", 
@@ -151,7 +138,6 @@ async def update_quiz(
             
         return {"message": "Тест успешно обновлен"}
     except Exception as e:
-        print(f"Error updating quiz {quiz_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/api/quizzes/{quiz_id}", 
@@ -166,5 +152,4 @@ async def delete_quiz(quiz_id: str = Path(..., description="ID теста для
             raise HTTPException(status_code=404, detail="Тест не найден")
         return {"message": "Тест успешно удален"}
     except Exception as e:
-        print(f"Error deleting quiz {quiz_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e)) 

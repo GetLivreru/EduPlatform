@@ -50,12 +50,10 @@ async def create_quiz_attempt(
 ):
     try:
         quiz_id = attempt_data.quiz_id
-        print(f"Creating quiz attempt for quiz_id: {quiz_id} by user {current_user.id}")
         
         # Проверяем существование теста
         quiz = await db.quizzes.find_one({"_id": ObjectId(quiz_id)})
         if not quiz:
-            print(f"Quiz not found with ID: {quiz_id}")
             raise HTTPException(status_code=404, detail="Тест не найден")
 
         # Создаем новую попытку
@@ -73,10 +71,8 @@ async def create_quiz_attempt(
         attempt["quiz_id"] = str(attempt["quiz_id"])
         attempt["user_id"] = str(attempt["user_id"])
         
-        print(f"Created quiz attempt: {attempt}")
         return attempt
     except Exception as e:
-        print(f"Error creating quiz attempt: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/{attempt_id}/answer",
