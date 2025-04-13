@@ -22,10 +22,33 @@ const QuizList: React.FC<QuizListProps> = ({ selectedSubject, selectedDifficulty
         const fetchQuizzes = async () => {
             try {
                 setLoading(true);
+                console.log('Загрузка списка квизов...');
                 const data = await getQuizzes();
-                setQuizzes(data);
+                
+                console.log('Получены данные квизов:', data);
+                
+                // Проверяем, что данные являются массивом
+                if (!Array.isArray(data)) {
+                    console.error('Полученные данные не являются массивом:', data);
+                    setError('Ошибка формата данных квизов');
+                    setLoading(false);
+                    return;
+                }
+                
+                // Проверяем поля квизов
+                const validQuizzes = data.filter(quiz => {
+                    const hasValidId = Boolean(quiz.id || quiz._id);
+                    if (!hasValidId) {
+                        console.warn('Квиз без действительного ID:', quiz);
+                    }
+                    return hasValidId;
+                });
+                
+                console.log(`Загружено ${validQuizzes.length} квизов из ${data.length} полученных`);
+                setQuizzes(validQuizzes);
                 setError(null);
             } catch (err) {
+                console.error('Ошибка при загрузке квизов:', err);
                 setError('Ошибка при загрузке квизов');
             } finally {
                 setLoading(false);
@@ -36,6 +59,14 @@ const QuizList: React.FC<QuizListProps> = ({ selectedSubject, selectedDifficulty
     }, []);
 
     const handleStartQuiz = (quizId: string) => {
+        if (!quizId || quizId === 'undefined') {
+            console.error('Попытка начать квиз с недопустимым ID:', quizId);
+            setError('Ошибка: невозможно начать квиз с указанным ID');
+            return;
+        }
+        
+        console.log('Начинаем квиз с ID:', quizId);
+        
         if (user) {
             navigate(`/quiz/${quizId}`);
         } else {
@@ -84,7 +115,7 @@ const QuizList: React.FC<QuizListProps> = ({ selectedSubject, selectedDifficulty
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-4">
                     {filteredQuizzes.map((quiz) => (
                         <div
-                            key={quiz._id}
+                            key={quiz.id || quiz._id}
                             className="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden"
                         >
                             <div className="p-6">
@@ -110,7 +141,7 @@ const QuizList: React.FC<QuizListProps> = ({ selectedSubject, selectedDifficulty
                                          quiz.difficulty?.toLowerCase() === 'medium' ? 'Средний' : 'Сложный'}
                                     </span>
                                     <button
-                                        onClick={() => handleStartQuiz(quiz._id)}
+                                        onClick={() => handleStartQuiz(quiz.id || quiz._id)}
                                         className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-300"
                                     >
                                         <FaPlay className="mr-2" />

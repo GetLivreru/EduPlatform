@@ -67,6 +67,7 @@ export interface User {
     name: string;
     login: string;
     is_admin: boolean;
+    quiz_points: number;
     created_at: string;
 }
 
@@ -81,6 +82,17 @@ export interface QuizAttempt {
         submitted_at: string;
     }>;
     score?: number;
+}
+
+export interface QuizResult {
+    _id: string;
+    quiz_id: string;
+    quiz_title: string;
+    user_id: string;
+    score: number;
+    completed_at: string;
+    quiz_description?: string;
+    quiz_category?: string;
 }
 
 // Quiz related functions
@@ -98,10 +110,35 @@ export const getQuiz = async (id: string): Promise<Quiz> => {
     try {
         console.log(`Fetching quiz with ID: ${id}`);
         if (!id || id === 'undefined') {
+            console.error('Invalid quiz ID provided');
             throw new Error('Invalid quiz ID');
         }
+        
         const response = await api.get(`/api/quizzes/${id}`);
-        return response.data;
+        
+        if (!response.data) {
+            console.error('No quiz data returned from API');
+            throw new Error('Quiz not found');
+        }
+        
+        // Убедиться, что у квиза есть ID
+        const quiz = response.data;
+        if (!quiz.id && !quiz._id) {
+            console.error('Quiz data does not have an ID:', quiz);
+            throw new Error('Quiz data is invalid');
+        }
+        
+        // Если нет _id, но есть id, копируем id в _id
+        if (!quiz._id && quiz.id) {
+            quiz._id = quiz.id;
+        }
+        
+        // Если нет id, но есть _id, копируем _id в id
+        if (!quiz.id && quiz._id) {
+            quiz.id = quiz._id;
+        }
+        
+        return quiz;
     } catch (error) {
         console.error('Error fetching quiz:', error);
         throw error;
@@ -112,7 +149,21 @@ export const getQuiz = async (id: string): Promise<Quiz> => {
 export const startQuiz = async (quizId: string) => {
     try {
         console.log(`Starting quiz with ID: ${quizId}`);
+        
+        // Проверка ID
+        if (!quizId || quizId === 'undefined') {
+            console.error('Invalid quiz ID provided to startQuiz:', quizId);
+            throw new Error('Invalid quiz ID');
+        }
+        
         const response = await api.post(`/api/quiz-attempts`, { quiz_id: quizId });
+        
+        if (!response.data || !response.data._id) {
+            console.error('Quiz attempt creation failed, invalid response:', response.data);
+            throw new Error('Failed to create quiz attempt');
+        }
+        
+        console.log(`Successfully created quiz attempt with ID: ${response.data._id}`);
         return response.data;
     } catch (error) {
         console.error('Error starting quiz:', error);
@@ -294,5 +345,26 @@ export const checkIsAdmin = async (): Promise<boolean> => {
     } catch (error) {
         console.error('Error checking admin rights:', error);
         return false;
+    }
+};
+
+// Quiz results functions
+export const getUserQuizResults = async (): Promise<QuizResult[]> => {
+    try {
+        const response = await api.get('/api/quiz-attempts/results/user');
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching user quiz results:', error);
+        throw error;
+    }
+};
+
+export const getQuizResult = async (quizId: string): Promise<QuizResult> => {
+    try {
+        const response = await api.get(`/api/quiz-attempts/results/${quizId}`);
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching quiz result:', error);
+        throw error;
     }
 }; 

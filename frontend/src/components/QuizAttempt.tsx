@@ -14,24 +14,47 @@ const QuizAttempt: React.FC = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        if (!quizId) {
-            setError('Quiz ID is required');
+        if (!quizId || quizId === 'undefined') {
+            console.error('Invalid Quiz ID provided:', quizId);
+            setError('Недопустимый ID квиза. Пожалуйста, вернитесь на главную страницу и выберите действительный квиз.');
             setLoading(false);
             return;
         }
 
         const loadQuiz = async () => {
             try {
+                console.log(`Загрузка квиза с ID: ${quizId}`);
                 const quizData = await getQuiz(quizId);
+                
+                if (!quizData) {
+                    console.error('Quiz data is null or undefined');
+                    throw new Error('Квиз не найден');
+                }
+                
+                // Проверка наличия вопросов
+                if (!quizData.questions || !Array.isArray(quizData.questions) || quizData.questions.length === 0) {
+                    console.error('Quiz has no questions:', quizData);
+                    throw new Error('В квизе нет вопросов');
+                }
+                
                 setQuiz(quizData);
                 setTimeLeft(quizData.time_limit * 60); // Convert minutes to seconds
                 
                 // Start quiz attempt
+                console.log('Начинаем попытку для квиза с ID:', quizId);
                 const attempt = await startQuiz(quizId);
+                
+                if (!attempt || !attempt._id) {
+                    console.error('Failed to create quiz attempt:', attempt);
+                    throw new Error('Не удалось создать попытку квиза');
+                }
+                
+                console.log('Создана попытка квиза с ID:', attempt._id);
                 setAttemptId(attempt._id);
                 setLoading(false);
             } catch (err) {
-                setError('Failed to load quiz');
+                console.error('Error loading quiz:', err);
+                setError('Не удалось загрузить квиз. Пожалуйста, попробуйте позже или выберите другой квиз.');
                 setLoading(false);
             }
         };
@@ -76,7 +99,7 @@ const QuizAttempt: React.FC = () => {
 
         try {
             const result = await finishQuiz(attemptId);
-            navigate(`/quiz-results/${attemptId}`, { state: { result } });
+            navigate(`/quiz-result/${attemptId}`, { state: { result } });
         } catch (err) {
             setError('Failed to finish quiz');
         }

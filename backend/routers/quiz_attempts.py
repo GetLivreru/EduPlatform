@@ -149,24 +149,45 @@ async def finish_quiz(
                     correct_answers += 1
 
         score = 0 if total_questions == 0 else (correct_answers / total_questions) * 100
-
+        
+        # Points to award
+        points_earned = int(score // 10)  # 1 point for each 10% of score
+        
         # Update attempt
+        completion_time = datetime.utcnow()
         await db.quiz_attempts.update_one(
             {"_id": ObjectId(attempt_id)},
             {
                 "$set": {
                     "status": "completed",
-                    "end_time": datetime.utcnow(),
+                    "end_time": completion_time,
                     "score": score
                 }
             }
         )
+        
+        # Update user's quiz points
+        await db.users.update_one(
+            {"_id": ObjectId(current_user.id)},
+            {"$inc": {"quiz_points": points_earned}}
+        )
+        
+        # Create quiz result entry
+        quiz_result = {
+            "quiz_id": str(quiz["_id"]),
+            "quiz_title": quiz["title"],
+            "user_id": current_user.id,
+            "score": score,
+            "completed_at": completion_time
+        }
+        await db.quiz_results.insert_one(quiz_result)
 
         return {
             "status": "completed",
             "score": score,
             "correct_answers": correct_answers,
-            "total_questions": total_questions
+            "total_questions": total_questions,
+            "points_earned": points_earned
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -194,5 +215,58 @@ async def get_attempt(
         attempt["user_id"] = str(attempt["user_id"])
         
         return attempt
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/results/user",
+           summary="Получить результаты квизов пользователя",
+           description="Возвращает список результатов квизов для текущего пользователя (требуется аутентификация)",
+           response_description="Список результатов квизов")
+async def get_user_quiz_results(
+    current_user: UserInDB = Depends(get_current_user)
+):
+    try:
+        # Получаем результаты квизов пользователя, сортируем по дате завершения (сначала новые)
+        cursor = db.quiz_results.find({"user_id": current_user.id}).sort("completed_at", -1)
+        
+        # Преобразуем результаты в список
+        results = []
+        async for result in cursor:
+            result["_id"] = str(result["_id"])
+            results.append(result)
+            
+        return results
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/results/{quiz_id}",
+           summary="Получить результат квиза",
+           description="Возвращает результаты конкретного квиза для текущего пользователя (требуется аутентификация)",
+           response_description="Результат квиза")
+async def get_quiz_result(
+    quiz_id: str = Path(..., description="ID квиза"),
+    current_user: UserInDB = Depends(get_current_user)
+):
+    try:
+        # Находим самый последний результат квиза для пользователя
+        result = await db.quiz_results.find_one(
+            {"quiz_id": quiz_id, "user_id": current_user.id},
+            sort=[("completed_at", -1)]
+        )
+        
+        if not result:
+            raise HTTPException(status_code=404, detail="Результат квиза не найден")
+            
+        # Преобразуем ObjectId в строку
+        result["_id"] = str(result["_id"])
+        
+        # Добавляем информацию о квизе
+        quiz = await db.quizzes.find_one({"_id": ObjectId(quiz_id)})
+        if quiz:
+            result["quiz_title"] = quiz["title"]
+            result["quiz_description"] = quiz["description"]
+            result["quiz_category"] = quiz["category"]
+            
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) 

@@ -7,6 +7,8 @@ import Register from './components/auth/Register';
 import QuizAttempt from './components/QuizAttempt';
 import QuizManager from './components/admin/QuizManager';
 import AdminPanel from './components/admin/AdminPanel';
+import QuizResults from './components/QuizResults';
+import QuizResultPage from './components/QuizResultPage';
 import { FaFilter } from 'react-icons/fa';
 import Quiz from './components/Quiz';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -121,6 +123,18 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                             {user ? (
                                 <>
                                     <span className="text-gray-700">Привет, {user.name}</span>
+                                    {user.quiz_points > 0 && (
+                                        <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full">
+                                            {user.quiz_points} {user.quiz_points === 1 ? 'балл' : 
+                                                user.quiz_points < 5 ? 'балла' : 'баллов'}
+                                        </span>
+                                    )}
+                                    <Link 
+                                        to="/quiz-results" 
+                                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                                    >
+                                        Мои результаты
+                                    </Link>
                                     {isAdmin && (
                                         <Link 
                                             to="/admin" 
@@ -222,6 +236,8 @@ const App: React.FC = () => {
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Register />} />
                         <Route path="/quiz/:quizId" element={<QuizAttempt />} />
+                        <Route path="/quiz-results" element={<QuizResults />} />
+                        <Route path="/quiz-result/:attemptId" element={<QuizResultPage />} />
                         <Route
                             path="/admin/quizzes/new"
                             element={

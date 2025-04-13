@@ -1,11 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-
-interface User {
-  id: string;
-  name: string;
-  login: string;
-  is_admin: boolean;
-}
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { User } from '../services/api';
 
 interface AuthContextType {
   user: User | null;
