@@ -11,6 +11,10 @@ async def init_db():
     client = AsyncIOMotorClient(MONGODB_URL)
     db = client.LearnApp
 
+
+
+
+
     # Тестовые квизы
     test_quizzes = [
         {
