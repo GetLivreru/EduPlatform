@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
-import { testConnection, getWelcomeMessage } from './services/api';
+import { testConnection, getWelcomeMessage, checkIsAdmin } from './services/api';
 import QuizList from './components/QuizList';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
@@ -14,30 +14,40 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 // Компонент для проверки прав администратора
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const location = useLocation();
+    const { user } = useAuth();
     const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const checkAdmin = async () => {
+        const checkAdminStatus = async () => {
             try {
-                const token = localStorage.getItem('token');
-                if (!token) {
+                setIsLoading(true);
+                // Сначала проверяем, авторизован ли пользователь
+                if (!user) {
                     setIsAdmin(false);
+                    setIsLoading(false);
                     return;
                 }
 
-                // TODO: Добавить проверку прав администратора через API
-                // Временно используем заглушку
-                setIsAdmin(true);
+                // Проверяем права администратора через API
+                const isAdminResult = await checkIsAdmin();
+                setIsAdmin(isAdminResult);
             } catch (error) {
+                console.error('Error checking admin rights:', error);
                 setIsAdmin(false);
+            } finally {
+                setIsLoading(false);
             }
         };
 
-        checkAdmin();
-    }, []);
+        checkAdminStatus();
+    }, [user]);
 
-    if (isAdmin === null) {
-        return <div>Загрузка...</div>;
+    if (isLoading) {
+        return <div className="flex justify-center items-center min-h-screen">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+            <p className="ml-3 text-gray-700">Проверка прав доступа...</p>
+        </div>;
     }
 
     if (!isAdmin) {
@@ -51,6 +61,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [backendStatus, setBackendStatus] = useState<string>('checking');
     const [welcomeMessage, setWelcomeMessage] = useState<string>('');
     const { user, logout } = useAuth();
+    const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
     useEffect(() => {
         const checkConnection = async () => {
@@ -67,6 +78,24 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
         checkConnection();
     }, []);
+
+    useEffect(() => {
+        const verifyAdminRights = async () => {
+            if (user) {
+                try {
+                    const hasAdminRights = await checkIsAdmin();
+                    setIsAdmin(hasAdminRights);
+                } catch (error) {
+                    console.error('Error verifying admin rights:', error);
+                    setIsAdmin(false);
+                }
+            } else {
+                setIsAdmin(false);
+            }
+        };
+
+        verifyAdminRights();
+    }, [user]);
 
     const handleLogout = () => {
         logout();
@@ -92,7 +121,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                             {user ? (
                                 <>
                                     <span className="text-gray-700">Привет, {user.name}</span>
-                                    {user.is_admin && (
+                                    {isAdmin && (
                                         <Link 
                                             to="/admin" 
                                             className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
@@ -193,9 +222,30 @@ const App: React.FC = () => {
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Register />} />
                         <Route path="/quiz/:quizId" element={<QuizAttempt />} />
-                        <Route path="/admin/quizzes/new" element={<QuizManager />} />
-                        <Route path="/admin/quizzes/edit/:quizId" element={<QuizManager />} />
-                        <Route path="/admin/quizzes" element={<QuizManager />} />
+                        <Route
+                            path="/admin/quizzes/new"
+                            element={
+                                <AdminRoute>
+                                    <QuizManager />
+                                </AdminRoute>
+                            }
+                        />
+                        <Route
+                            path="/admin/quizzes/edit/:quizId"
+                            element={
+                                <AdminRoute>
+                                    <QuizManager />
+                                </AdminRoute>
+                            }
+                        />
+                        <Route
+                            path="/admin/quizzes"
+                            element={
+                                <AdminRoute>
+                                    <QuizManager />
+                                </AdminRoute>
+                            }
+                        />
                         <Route
                             path="/admin"
                             element={

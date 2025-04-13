@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FaTimes, FaPlus, FaSave, FaArrowLeft } from 'react-icons/fa';
-import { createQuiz, getQuiz, updateQuiz } from '../../services/api';
+import { createQuiz, updateQuiz, getAdminQuiz } from '../../services/api';
 
 interface Question {
     text: string;
@@ -29,7 +29,7 @@ const QuizManager: React.FC = () => {
 
             try {
                 setLoading(true);
-                const quizData = await getQuiz(quizId);
+                const quizData = await getAdminQuiz(quizId);
                 
                 setFormData({
                     title: quizData.title,

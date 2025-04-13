@@ -46,7 +46,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # Include routers
 app.include_router(quiz_attempts.router, prefix="/api/quiz-attempts", tags=["quiz-attempts"])
 app.include_router(quizzes.router, tags=["quizzes"])
-app.include_router(admin.router, prefix="/admin", tags=["admin"])
+app.include_router(admin.router, prefix="/admin", tags=["admin"], dependencies=[Depends(require_admin)])
 
 # Кастомные эндпоинты для документации
 @app.get("/docs", include_in_schema=False)
@@ -137,6 +137,15 @@ async def login(user: UserLogin):
             "login": db_user["login"],
             "is_admin": db_user["is_admin"]
         }
+    }
+
+@app.get("/api/check-admin",
+        summary="Проверка прав администратора",
+        description="Проверяет, имеет ли текущий пользователь права администратора",
+        tags=["аутентификация"])
+async def check_admin(current_user: UserInDB = Depends(get_current_user)):
+    return {
+        "is_admin": current_user.is_admin
     }
 
 if __name__ == "__main__":

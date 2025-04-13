@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FaUsers, FaBook, FaEdit, FaTrash, FaPlus, FaEye, FaTimes } from 'react-icons/fa';
-import { getQuizzes, getUsers, deleteUser, deleteQuiz } from '../../services/api';
+import { getAdminQuizzes, getUsers, deleteUser, deleteQuiz } from '../../services/api';
 import { Quiz } from '../../services/api';
 import { useNavigate } from 'react-router-dom';
 
@@ -19,7 +19,7 @@ const AdminPanel: React.FC = () => {
             try {
                 setLoading(true);
                 if (activeTab === 'quizzes') {
-                    const quizzesData = await getQuizzes();
+                    const quizzesData = await getAdminQuizzes();
                     setQuizzes(quizzesData);
                 } else {
                     const usersData = await getUsers();

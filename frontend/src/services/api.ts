@@ -86,7 +86,7 @@ export interface QuizAttempt {
 // Quiz related functions
 export const getQuizzes = async (): Promise<Quiz[]> => {
     try {
-        const response = await api.get('/admin/quizzes');
+        const response = await api.get('/api/quizzes');
         return response.data;
     } catch (error) {
         console.error('Error fetching quizzes:', error);
@@ -100,7 +100,7 @@ export const getQuiz = async (id: string): Promise<Quiz> => {
         if (!id || id === 'undefined') {
             throw new Error('Invalid quiz ID');
         }
-        const response = await api.get(`/admin/quizzes/${id}`);
+        const response = await api.get(`/api/quizzes/${id}`);
         return response.data;
     } catch (error) {
         console.error('Error fetching quiz:', error);
@@ -157,6 +157,29 @@ export const getAttempt = async (attemptId: string): Promise<QuizAttempt> => {
 };
 
 // Admin functions
+export const getAdminQuizzes = async (): Promise<Quiz[]> => {
+    try {
+        const response = await api.get('/admin/quizzes');
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching quizzes as admin:', error);
+        throw error;
+    }
+};
+
+export const getAdminQuiz = async (id: string): Promise<Quiz> => {
+    try {
+        if (!id || id === 'undefined') {
+            throw new Error('Invalid quiz ID');
+        }
+        const response = await api.get(`/admin/quizzes/${id}`);
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching quiz as admin:', error);
+        throw error;
+    }
+};
+
 export const createQuiz = async (quiz: Omit<Quiz, 'id' | '_id'>): Promise<Quiz> => {
     try {
         const response = await api.post('/admin/quizzes', quiz);
@@ -261,4 +284,15 @@ export const register = async (name: string, login: string, password: string): P
 
 export const logout = (): void => {
     localStorage.removeItem('token');
+};
+
+// Функция для проверки прав администратора
+export const checkIsAdmin = async (): Promise<boolean> => {
+    try {
+        const response = await api.get('/api/check-admin');
+        return response.data.is_admin;
+    } catch (error) {
+        console.error('Error checking admin rights:', error);
+        return false;
+    }
 }; 
