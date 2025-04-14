@@ -1,20 +1,128 @@
-from fastapi import APIRouter, HTTPException, Body, Query, Path
+from fastapi import APIRouter, HTTPException, Body, Query, Path, Depends
 from motor.motor_asyncio import AsyncIOMotorClient
 from bson import ObjectId
 from typing import List, Optional, Dict, Any
 import os
 from dotenv import load_dotenv
 from datetime import datetime
+from passlib.context import CryptContext
+from models import UserCreate, UserResponse, User
 
 load_dotenv()
 
 router = APIRouter()
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # MongoDB connection
 MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
 client = AsyncIOMotorClient(MONGODB_URL)
 db = client.LearnApp
 
+# User management endpoints
+@router.get("/users", 
+            summary="Получить список пользователей [админ]",
+            description="Возвращает список всех пользователей (требуются права администратора)")
+async def get_users():
+    try:
+        users = []
+        cursor = db.users.find({}, {"password": 0})  # Exclude passwords
+        async for user in cursor:
+            user["id"] = str(user["_id"])
+            del user["_id"]
+            users.append(user)
+        return users
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/users",
+            response_model=UserResponse,
+            summary="Создать нового пользователя [админ]",
+            description="Создает нового пользователя с указанными данными (требуются права администратора)")
+async def create_user(user: UserCreate):
+    try:
+        # Проверяем, существует ли пользователь с таким email
+        existing_user = await db.users.find_one({"login": user.login})
+        if existing_user:
+            raise HTTPException(status_code=400, detail="Пользователь с таким email уже существует")
+        
+        # Хешируем пароль
+        user_dict = user.model_dump()
+        user_dict["password"] = pwd_context.hash(user_dict["password"])
+        user_dict["created_at"] = datetime.now()
+        user_dict["quiz_points"] = 0
+        
+        # Сохраняем пользователя
+        result = await db.users.insert_one(user_dict)
+        created_user = await db.users.find_one({"_id": result.inserted_id})
+        
+        # Преобразуем _id в строку для ответа
+        created_user["id"] = str(created_user["_id"])
+        del created_user["_id"]
+        del created_user["password"]
+        
+        return UserResponse(**created_user)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.put("/users/{user_id}",
+           response_model=UserResponse,
+           summary="Обновить данные пользователя [админ]",
+           description="Обновляет данные существующего пользователя (требуются права администратора)")
+async def update_user(
+    user_id: str,
+    user_update: dict = Body(...)
+):
+    try:
+        # Проверяем существование пользователя
+        existing_user = await db.users.find_one({"_id": ObjectId(user_id)})
+        if not existing_user:
+            raise HTTPException(status_code=404, detail="Пользователь не найден")
+        
+        # Если обновляется email, проверяем его уникальность
+        if "login" in user_update and user_update["login"] != existing_user["login"]:
+            email_exists = await db.users.find_one({
+                "login": user_update["login"],
+                "_id": {"$ne": ObjectId(user_id)}
+            })
+            if email_exists:
+                raise HTTPException(status_code=400, detail="Пользователь с таким email уже существует")
+        
+        # Если обновляется пароль, хешируем его
+        if "password" in user_update:
+            user_update["password"] = pwd_context.hash(user_update["password"])
+        
+        # Обновляем пользователя
+        update_result = await db.users.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": user_update}
+        )
+        
+        if update_result.modified_count == 0:
+            raise HTTPException(status_code=404, detail="Пользователь не найден")
+        
+        # Получаем обновленного пользователя
+        updated_user = await db.users.find_one({"_id": ObjectId(user_id)})
+        updated_user["id"] = str(updated_user["_id"])
+        del updated_user["_id"]
+        del updated_user["password"]
+        
+        return UserResponse(**updated_user)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/users/{user_id}",
+              summary="Удалить пользователя [админ]",
+              description="Удаляет пользователя из системы (требуются права администратора)")
+async def delete_user(user_id: str):
+    try:
+        result = await db.users.delete_one({"_id": ObjectId(user_id)})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Пользователь не найден")
+        return {"message": "Пользователь успешно удален"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Quiz management endpoints
 @router.post("/quizzes", 
             summary="Создать новый тест",
             description="Создает новый тест с указанными параметрами",
@@ -126,36 +234,6 @@ async def get_quiz_stats():
             "by_category": quizzes_by_category,
             "by_difficulty": quizzes_by_difficulty
         }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.get("/users",
-           summary="Список пользователей",
-           description="Возвращает список всех пользователей",
-           response_description="Массив пользователей")
-async def get_users():
-    try:
-        users = await db.users.find().to_list(None)
-        # Convert ObjectId to string for JSON serialization
-        for user in users:
-            user["_id"] = str(user["_id"])
-        
-        return users
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.delete("/users/{user_id}",
-              summary="Удалить пользователя",
-              description="Удаляет пользователя по ID",
-              response_description="Статус операции")
-async def delete_user(user_id: str = Path(..., description="ID пользователя для удаления")):
-    try:
-        result = await db.users.delete_one({"_id": ObjectId(user_id)})
-        
-        if result.deleted_count == 0:
-            raise HTTPException(status_code=404, detail="User not found")
-            
-        return {"status": "success", "message": "User deleted successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

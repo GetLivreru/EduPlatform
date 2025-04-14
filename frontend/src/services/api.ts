@@ -281,7 +281,7 @@ export const getUser = async (userId: string): Promise<User> => {
     }
 };
 
-export const createUser = async (user: Omit<User, 'id' | 'created_at'>): Promise<User> => {
+export const createUser = async (user: Omit<User, 'id' | 'created_at' | 'quiz_points'>): Promise<User> => {
     try {
         const response = await api.post('/admin/users', user);
         return response.data;
@@ -291,7 +291,7 @@ export const createUser = async (user: Omit<User, 'id' | 'created_at'>): Promise
     }
 };
 
-export const updateUser = async (userId: string, user: Partial<User>): Promise<User> => {
+export const updateUser = async (userId: string, user: Partial<Omit<User, 'id' | 'created_at'>>): Promise<User> => {
     try {
         const response = await api.put(`/admin/users/${userId}`, user);
         return response.data;

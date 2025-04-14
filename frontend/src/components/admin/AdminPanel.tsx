@@ -3,16 +3,26 @@ import { FaUsers, FaBook, FaEdit, FaTrash, FaPlus, FaEye, FaTimes } from 'react-
 import { getAdminQuizzes, getUsers, deleteUser, deleteQuiz } from '../../services/api';
 import { Quiz } from '../../services/api';
 import { useNavigate } from 'react-router-dom';
+import UserForm from './UserForm';
+
+interface User {
+    id: string;
+    name: string;
+    login: string;
+    is_admin: boolean;
+}
 
 const AdminPanel: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'users' | 'quizzes'>('users');
     const [quizzes, setQuizzes] = useState<Quiz[]>([]);
-    const [users, setUsers] = useState<any[]>([]);
+    const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
     const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null);
     const [showQuizModal, setShowQuizModal] = useState(false);
+    const [showUserForm, setShowUserForm] = useState(false);
+    const [selectedUser, setSelectedUser] = useState<User | undefined>(undefined);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -50,7 +60,7 @@ const AdminPanel: React.FC = () => {
         if (window.confirm('Вы уверены, что хотите удалить этого пользователя?')) {
             try {
                 await deleteUser(userId);
-                setUsers(users.filter(user => user._id !== userId));
+                setUsers(users.filter(user => user.id !== userId));
             } catch (err) {
                 setError('Ошибка при удалении пользователя');
             }
@@ -61,9 +71,29 @@ const AdminPanel: React.FC = () => {
         navigate(`/admin/quizzes/edit/${quizId}`);
     };
 
-    const handleEditUser = (userId: string) => {
-        // TODO: Добавить редактирование пользователя
-        console.log('Редактирование пользователя:', userId);
+    const handleEditUser = (user: User) => {
+        setSelectedUser(user);
+        setShowUserForm(true);
+    };
+
+    const handleAddUser = () => {
+        setSelectedUser(undefined);
+        setShowUserForm(true);
+    };
+
+    const handleUserFormSuccess = () => {
+        // Refresh the users list
+        if (activeTab === 'users') {
+            const fetchUsers = async () => {
+                try {
+                    const usersData = await getUsers();
+                    setUsers(usersData);
+                } catch (err) {
+                    setError('Ошибка при обновлении списка пользователей');
+                }
+            };
+            fetchUsers();
+        }
     };
 
     const handleViewQuiz = (quiz: Quiz) => {
@@ -119,7 +149,10 @@ const AdminPanel: React.FC = () => {
             ) : activeTab === 'users' ? (
                 <div className="bg-white rounded-lg shadow overflow-hidden">
                     <div className="p-4 border-b border-gray-200">
-                        <button className="bg-green-500 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-green-600">
+                        <button 
+                            onClick={handleAddUser}
+                            className="bg-green-500 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-green-600"
+                        >
                             <FaPlus />
                             <span>Добавить пользователя</span>
                         </button>
@@ -143,7 +176,7 @@ const AdminPanel: React.FC = () => {
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                             {users.map((user) => (
-                                <tr key={user._id}>
+                                <tr key={user.id}>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="text-sm font-medium text-gray-900">{user.name}</div>
                                     </td>
@@ -159,13 +192,13 @@ const AdminPanel: React.FC = () => {
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <button
-                                            onClick={() => handleEditUser(user._id)}
+                                            onClick={() => handleEditUser(user)}
                                             className="text-blue-600 hover:text-blue-900 mr-4"
                                         >
                                             <FaEdit />
                                         </button>
                                         <button
-                                            onClick={() => handleDeleteUser(user._id)}
+                                            onClick={() => handleDeleteUser(user.id)}
                                             className="text-red-600 hover:text-red-900"
                                         >
                                             <FaTrash />
@@ -348,6 +381,14 @@ const AdminPanel: React.FC = () => {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {showUserForm && (
+                <UserForm
+                    user={selectedUser}
+                    onClose={() => setShowUserForm(false)}
+                    onSuccess={handleUserFormSuccess}
+                />
             )}
         </div>
     );
