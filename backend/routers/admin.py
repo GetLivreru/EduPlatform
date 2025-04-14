@@ -91,6 +91,12 @@ async def update_user(
         if "password" in user_update:
             user_update["password"] = pwd_context.hash(user_update["password"])
         
+        # Сохраняем существующие поля, которые не должны быть изменены
+        if "quiz_points" not in user_update:
+            user_update["quiz_points"] = existing_user.get("quiz_points", 0)
+        if "created_at" not in user_update:
+            user_update["created_at"] = existing_user.get("created_at", datetime.now())
+        
         # Обновляем пользователя
         update_result = await db.users.update_one(
             {"_id": ObjectId(user_id)},
