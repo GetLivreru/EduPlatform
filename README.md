@@ -12,6 +12,9 @@ A web service for personalized student learning through quizzes and AI-generated
 └── README.md        # This file
 ```
 
+
+## Funny Stack
+
 ## Tech Stack
 
 - **Backend**: Python + FastAPI
