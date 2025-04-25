@@ -11,6 +11,10 @@ app = FastAPI(
     redoc_url=None  # Отключаем стандартный /redoc endpoint
 )
 
+
+
+
+
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
