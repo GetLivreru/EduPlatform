@@ -299,7 +299,7 @@ const QuizResults: React.FC = () => {
     if (score >= 90) return 'Отлично!';
     if (score >= 70) return 'Хороший результат!';
     if (score >= 50) return 'Неплохо!';
-    return 'Старайтесь лучше!';
+    return 'Старайтесь!';
   };
 
   // Mock learning materials based on the quiz category
