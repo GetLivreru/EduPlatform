@@ -11,8 +11,6 @@ async def init_db():
     client = AsyncIOMotorClient(MONGODB_URL)
     db = client.LearnApp
 
-
-
     try:
         # Очищаем существующие коллекции
         await db.quizzes.delete_many({})
