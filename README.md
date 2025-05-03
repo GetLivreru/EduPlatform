@@ -1,4 +1,4 @@
-# Educational Quiz Platform 🎓
+# Educational AI Platform 🎓
 
 A modern web service for personalized student learning through interactive quizzes and AI-generated content.
 
