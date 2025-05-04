@@ -22,7 +22,7 @@ class QuizAttemptCreate(BaseModel):
     quiz_id: str = Field(..., description="ID теста для начала попытки")
     
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "quiz_id": "60c72b2f9b1d7c2d1c8b4567"
             }
@@ -33,7 +33,7 @@ class AnswerSubmit(BaseModel):
     answer: int = Field(..., description="Индекс выбранного варианта ответа (начиная с 0)")
     
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "question_index": 0,
                 "answer": 2
