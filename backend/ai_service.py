@@ -22,7 +22,7 @@ async def generate_learning_path(subject: str, level: str, previous_quiz_results
     
     try:
         response = client.chat.completions.create(
-            model="gpt-4",
+            model="gpt-o4-mini",
             messages=[
                 {"role": "system", "content": "You are an expert educational content generator."},
                 {"role": "user", "content": prompt}

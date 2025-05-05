@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getUserQuizResults, getQuiz, getQuizResult, QuizResult, Quiz } from '../services/api';
 import styled from 'styled-components';
+import { useAuth } from '../context/AuthContext';
 
 const PageContainer = styled.div`
   display: flex;
@@ -240,11 +241,29 @@ const PrimaryButton = styled(Button)`
 `;
 
 const QuizResults: React.FC = () => {
+  const { user } = useAuth();
   const [results, setResults] = useState<QuizResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedResult, setSelectedResult] = useState<QuizResult | null>(null);
   const [quizDetails, setQuizDetails] = useState<Quiz | null>(null);
+
+  // Моковые данные для учебного плана и достижений
+  const weekPlan = [
+    { day: 'Пн', tasks: ['Видеоурок', 'Карточки'], done: true },
+    { day: 'Вт', tasks: ['Мини-тест', 'Практика'], done: false },
+    { day: 'Ср', tasks: ['Повторение'], done: false },
+    { day: 'Чт', tasks: ['Видеоурок'], done: false },
+    { day: 'Пт', tasks: ['Практика'], done: false },
+    { day: 'Сб', tasks: ['Тестирование'], done: false },
+    { day: 'Вс', tasks: ['Отдых'], done: false },
+  ];
+  const weakTopics = ['Проценты', 'Линейные уравнения'];
+  const achievements = [
+    { icon: '✅', label: 'Пройдено 5 квизов' },
+    { icon: '🧠', label: 'Изучено 3 темы' },
+  ];
+  const progress = 54; // % учебного плана
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -252,7 +271,6 @@ const QuizResults: React.FC = () => {
         setLoading(true);
         const data = await getUserQuizResults();
         setResults(data);
-        
         if (data.length > 0) {
           setSelectedResult(data[0]);
           if (data[0].quiz_id) {
@@ -260,15 +278,12 @@ const QuizResults: React.FC = () => {
             setQuizDetails(quizData);
           }
         }
-        
         setLoading(false);
       } catch (err) {
-        console.error('Error fetching quiz results:', err);
-        setError('Failed to load quiz results');
+        setError('Ошибка загрузки');
         setLoading(false);
       }
     };
-
     fetchResults();
   }, []);
 
@@ -360,98 +375,92 @@ const QuizResults: React.FC = () => {
     }
   };
 
-  if (loading) {
-    return <LoadingMessage>Загрузка результатов...</LoadingMessage>;
-  }
-
-  if (error) {
-    return <div>{error}</div>;
-  }
+  if (loading) return <LoadingMessage>Загрузка...</LoadingMessage>;
+  if (error) return <div>{error}</div>;
 
   return (
-    <PageContainer>
-      <Sidebar>
-        <PageTitle>Моё обучение</PageTitle>
-        {results.length === 0 ? (
-          <EmptyResults>
-            <p>У вас пока нет пройденных квизов</p>
-            <Link to="/">Пройти квиз</Link>
-          </EmptyResults>
-        ) : (
-          results.map((result) => (
-            <ResultItem 
-              key={result._id} 
-              active={selectedResult?._id === result._id}
-              onClick={() => selectResult(result)}
-            >
-              <ResultTitle>{result.quiz_title}</ResultTitle>
-              <ResultMeta>
-                <Category>{result.quiz_category || 'Общее'}</Category>
-                <ResultScore score={result.score}>{result.score.toFixed(1)}%</ResultScore>
-              </ResultMeta>
-              <ResultMeta>
-                <span>Пройден: {formatDate(result.completed_at)}</span>
-              </ResultMeta>
-            </ResultItem>
-          ))
-        )}
-      </Sidebar>
-      
-      <MainContent>
-        {selectedResult && quizDetails ? (
-          <>
-            <ResultHeader>
-              <ResultDetailTitle>{quizDetails.title}</ResultDetailTitle>
-              <ResultDescription>{quizDetails.description}</ResultDescription>
-              
-              <ScoreCircle score={selectedResult.score}>
-                <ScoreValue score={selectedResult.score}>
-                  {selectedResult.score.toFixed(1)}%
-                </ScoreValue>
-                <ScoreLabel>{getScoreMessage(selectedResult.score)}</ScoreLabel>
-              </ScoreCircle>
-              
-              <ResultDetails>
-                <DetailItem>
-                  <DetailLabel>Категория:</DetailLabel>
-                  <DetailValue>{quizDetails.category}</DetailValue>
-                </DetailItem>
-                <DetailItem>
-                  <DetailLabel>Сложность:</DetailLabel>
-                  <DetailValue>{quizDetails.difficulty}</DetailValue>
-                </DetailItem>
-                <DetailItem>
-                  <DetailLabel>Дата прохождения:</DetailLabel>
-                  <DetailValue>{formatDate(selectedResult.completed_at)}</DetailValue>
-                </DetailItem>
-                <DetailItem>
-                  <DetailLabel>Баллы:</DetailLabel>
-                  <DetailValue>{Math.floor(selectedResult.score / 10)} баллов</DetailValue>
-                </DetailItem>
-              </ResultDetails>
-            </ResultHeader>
-            
-            <SectionTitle>Материалы для обучения</SectionTitle>
-            {getLearningMaterials(quizDetails.category).map((material, index) => (
-              <LearningMaterial key={index}>
-                <LearningTopic>{material.topic}</LearningTopic>
-                <LearningDescription>{material.description}</LearningDescription>
-                <LearningResourceLink href={material.link} target="_blank" rel="noopener noreferrer">
-                  Изучить материал &rarr;
-                </LearningResourceLink>
-              </LearningMaterial>
-            ))}
-            
-            <ButtonGroup>
-              <PrimaryButton to="/">На главную</PrimaryButton>
-            </ButtonGroup>
-          </>
-        ) : (
-          <EmptyResults>
-            <p>Выберите результат квиза из списка слева для просмотра детальной информации</p>
-          </EmptyResults>
-        )}
-      </MainContent>
+    <PageContainer style={{ flexDirection: 'column', maxWidth: 900 }}>
+      {/* 1. Заголовок и приветствие */}
+      <PageTitle style={{ border: 'none', marginBottom: 8 }}>🧩 МОЁ ОБУЧЕНИЕ</PageTitle>
+      <div style={{ fontSize: 20, marginBottom: 24 }}>
+        Привет, {user?.name || 'друг'}! Вот твой персональный план.
+      </div>
+
+      {/* 2. Результаты последнего квиза */}
+      {selectedResult && quizDetails && (
+        <div style={{ background: '#fff', borderRadius: 10, boxShadow: '0 2px 8px #0001', padding: 24, marginBottom: 32 }}>
+          <div style={{ fontSize: 18, fontWeight: 500, marginBottom: 8 }}>
+            Квиз: {quizDetails.title}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
+            <ScoreCircle score={selectedResult.score} style={{ width: 100, height: 100, fontSize: 24 }}>
+              <ScoreValue score={selectedResult.score}>{Math.round(selectedResult.score)}%</ScoreValue>
+            </ScoreCircle>
+            <div>
+              <div style={{ fontSize: 16, marginBottom: 4 }}>
+                Балл: <span style={{ fontWeight: 600, color: selectedResult.score >= 80 ? '#4caf50' : selectedResult.score >= 60 ? '#ff9800' : '#f44336' }}>{Math.round(selectedResult.score)}/100</span>
+              </div>
+              <div style={{ fontSize: 15, marginBottom: 4 }}>Уровень: B1 / Intermediate</div>
+              <div style={{ fontSize: 15, marginBottom: 4 }}>Слабые темы: {weakTopics.join(', ')}</div>
+              <PrimaryButton to={"/quiz/" + selectedResult.quiz_id}>🔁 Пройти ещё раз</PrimaryButton>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 3. Индивидуальный учебный план */}
+      <SectionTitle>Учебный план на неделю</SectionTitle>
+      <div style={{ display: 'flex', gap: 12, marginBottom: 32 }}>
+        {weekPlan.map((d, i) => (
+          <div key={i} style={{ background: d.done ? '#e8f5e9' : '#f5f5f5', borderRadius: 8, padding: 12, minWidth: 80, textAlign: 'center', border: d.done ? '2px solid #4caf50' : '1px solid #ddd' }}>
+            <div style={{ fontWeight: 600 }}>{d.day}</div>
+            <div style={{ fontSize: 13, margin: '6px 0' }}>{d.tasks.join(' + ')}</div>
+            <div>{d.done ? '✔️' : ''}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ height: 12, background: '#eee', borderRadius: 6, marginBottom: 32, overflow: 'hidden' }}>
+        <div style={{ width: progress + '%', background: '#3f51b5', height: '100%' }}></div>
+      </div>
+      <div style={{ marginBottom: 32, color: '#666' }}>Прогресс учебного плана: <b>{progress}%</b></div>
+
+      {/* 4. Рекомендованные материалы */}
+      <SectionTitle>Тебе стоит изучить</SectionTitle>
+      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 32 }}>
+        <LearningMaterial>
+          <LearningTopic>📹 Видео: Объяснение процентов</LearningTopic>
+          <LearningDescription>Краткое видео по теме "Проценты" для закрепления материала.</LearningDescription>
+          <LearningResourceLink href="https://www.youtube.com/watch?v=Vn8phH0k5HI" target="_blank">Смотреть</LearningResourceLink>
+        </LearningMaterial>
+        <LearningMaterial>
+          <LearningTopic>📄 Статья: Как решать линейные уравнения</LearningTopic>
+          <LearningDescription>Пошаговое руководство по решению линейных уравнений.</LearningDescription>
+          <LearningResourceLink href="https://ege-study.ru/article/lineinye-uravneniya/" target="_blank">Читать</LearningResourceLink>
+        </LearningMaterial>
+        <LearningMaterial>
+          <LearningTopic>🔗 Внешняя ссылка: Khan Academy: Линейные уравнения</LearningTopic>
+          <LearningDescription>Интерактивные уроки и задачи по линейным уравнениям.</LearningDescription>
+          <LearningResourceLink href="https://ru.khanacademy.org/math/algebra/one-variable-linear-equations" target="_blank">Перейти</LearningResourceLink>
+        </LearningMaterial>
+      </div>
+
+      {/* 5. Генерация контента ИИ */}
+      <SectionTitle>Сгенерировать шпаргалку</SectionTitle>
+      <div style={{ marginBottom: 16 }}>
+        Быстрая шпаргалка по темам: <b>{weakTopics.join(', ')}</b>
+      </div>
+      <PrimaryButton to="#">Создать новый квиз по моим ошибкам</PrimaryButton>
+
+      {/* 6. Прогресс и достижения */}
+      <SectionTitle>Достижения</SectionTitle>
+      <div style={{ display: 'flex', gap: 16, marginBottom: 32 }}>
+        {achievements.map((a, i) => (
+          <div key={i} style={{ background: '#f5f5f5', borderRadius: 8, padding: 16, minWidth: 120, textAlign: 'center', fontSize: 18 }}>
+            <div style={{ fontSize: 28 }}>{a.icon}</div>
+            <div>{a.label}</div>
+          </div>
+        ))}
+      </div>
     </PageContainer>
   );
 };
