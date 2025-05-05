@@ -3,7 +3,9 @@ __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
-
+.env
 # Virtual environments
 venv/
+.env
+# .gitignore
 .env
