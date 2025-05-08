@@ -9,9 +9,11 @@ import QuizManager from './components/admin/QuizManager';
 import AdminPanel from './components/admin/AdminPanel';
 import QuizResults from './components/QuizResults';
 import QuizResultPage from './components/QuizResultPage';
+import MyLearning from './components/MyLearning';
 import { FaFilter } from 'react-icons/fa';
 import Quiz from './components/Quiz';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import LearningRecommendations from './pages/LearningRecommendations';
 
 // Компонент для проверки прав администратора
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -130,10 +132,10 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                                         </span>
                                     )}
                                     <Link 
-                                        to="/quiz-results" 
+                                        to="/my-learning" 
                                         className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
                                     >
-                                        Мои результаты
+                                        Моё обучение
                                     </Link>
                                     {isAdmin && (
                                         <Link 
@@ -237,6 +239,7 @@ const App: React.FC = () => {
                         <Route path="/register" element={<Register />} />
                         <Route path="/quiz/:quizId" element={<QuizAttempt />} />
                         <Route path="/quiz-results" element={<QuizResults />} />
+                        <Route path="/my-learning" element={<MyLearning />} />
                         <Route path="/quiz-result/:attemptId" element={<QuizResultPage />} />
                         <Route
                             path="/admin/quizzes/new"
@@ -271,6 +274,7 @@ const App: React.FC = () => {
                             }
                         />
                         <Route path="/quiz/:id" element={<Quiz />} />
+                        <Route path="/learning-recommendations/:quizId" element={<LearningRecommendations />} />
                         <Route path="*" element={<Navigate to="/" replace />} />
                     </Routes>
                 </Layout>

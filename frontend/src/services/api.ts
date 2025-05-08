@@ -41,6 +41,14 @@ export const getWelcomeMessage = async (): Promise<string> => {
 };
 
 // Quiz related interfaces
+export interface Question {
+    id: string;
+    text: string;
+    options: string[];
+    correct_answer: number;
+    explanation?: string;
+}
+
 export interface QuizQuestion {
     question: string;
     options: string[];
@@ -49,17 +57,15 @@ export interface QuizQuestion {
 
 export interface Quiz {
     id: string;
-    _id: string; // MongoDB ID
     title: string;
     description: string;
     category: string;
-    questions: Array<{
-        text: string;
-        options: string[];
-        correct_answer: number;
-    }>;
-    difficulty: string;
+    level: string;
+    questions: Question[];
     time_limit: number;
+    passing_score: number;
+    created_at: string;
+    updated_at: string;
 }
 
 export interface User {
@@ -85,14 +91,21 @@ export interface QuizAttempt {
 }
 
 export interface QuizResult {
-    _id: string;
+    id: string;
+    _id: string;  // MongoDB ID
     quiz_id: string;
     quiz_title: string;
+    quiz_category: string;
     user_id: string;
     score: number;
+    time_taken: number;
     completed_at: string;
-    quiz_description?: string;
-    quiz_category?: string;
+    incorrect_questions: Array<{
+        question_id: string;
+        question_text: string;
+        user_answer: string;
+        correct_answer: string;
+    }>;
 }
 
 // Quiz related functions
@@ -367,4 +380,29 @@ export const getQuizResult = async (quizId: string): Promise<QuizResult> => {
         console.error('Error fetching quiz result:', error);
         throw error;
     }
+};
+
+export const getLearningRecommendations = async (
+  subject: string,
+  level: string,
+  quizResults: any,
+  incorrectQuestions: any[]
+): Promise<any> => {
+  const formData = new FormData();
+  formData.append('subject', subject);
+  formData.append('level', level);
+  formData.append('quiz_results', JSON.stringify(quizResults));
+  formData.append('incorrect_questions', JSON.stringify(incorrectQuestions));
+
+  const response = await fetch(`${API_BASE_URL}/api/quiz-attempts/learning-recommendations`, {
+    method: 'POST',
+    body: formData,
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    throw new Error('Не удалось получить рекомендации по обучению');
+  }
+
+  return response.json();
 }; 

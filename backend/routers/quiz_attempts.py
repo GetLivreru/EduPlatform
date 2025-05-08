@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Body, Path, Depends, Request
+from fastapi import APIRouter, HTTPException, Body, Path, Depends, Request, Form, BackgroundTasks
 from motor.motor_asyncio import AsyncIOMotorClient
 from bson import ObjectId
 from typing import List, Dict, Any
@@ -8,6 +8,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 from middleware import get_current_user
 from models import UserInDB
+from ai_service import generate_learning_recommendations
 
 load_dotenv()
 
@@ -134,15 +135,24 @@ async def finish_quiz(
         if not quiz:
             raise HTTPException(status_code=404, detail="Quiz not found")
 
-        # Calculate score
+        # Calculate score and collect incorrect answers
         correct_answers = 0
         total_questions = len(quiz["questions"])
+        incorrect_questions = []
         
         for answer in attempt["answers"]:
             question_idx = answer.get("question_index")
             if 0 <= question_idx < total_questions:
-                if answer["answer"] == quiz["questions"][question_idx]["correct_answer"]:
+                question = quiz["questions"][question_idx]
+                if answer["answer"] == question["correct_answer"]:
                     correct_answers += 1
+                else:
+                    incorrect_questions.append({
+                        "question_id": str(question["_id"]) if "_id" in question else str(question_idx),
+                        "question_text": question["text"],
+                        "user_answer": question["options"][answer["answer"]],
+                        "correct_answer": question["options"][question["correct_answer"]]
+                    })
 
         score = 0 if total_questions == 0 else (correct_answers / total_questions) * 100
         
@@ -157,7 +167,8 @@ async def finish_quiz(
                 "$set": {
                     "status": "completed",
                     "end_time": completion_time,
-                    "score": score
+                    "score": score,
+                    "incorrect_questions": incorrect_questions
                 }
             }
         )
@@ -174,7 +185,8 @@ async def finish_quiz(
             "quiz_title": quiz["title"],
             "user_id": current_user.id,
             "score": score,
-            "completed_at": completion_time
+            "completed_at": completion_time,
+            "incorrect_questions": incorrect_questions
         }
         await db.quiz_results.insert_one(quiz_result)
 
@@ -183,7 +195,8 @@ async def finish_quiz(
             "score": score,
             "correct_answers": correct_answers,
             "total_questions": total_questions,
-            "points_earned": points_earned
+            "points_earned": points_earned,
+            "incorrect_questions": incorrect_questions
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -265,4 +278,77 @@ async def get_quiz_result(
             
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) 
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/learning-recommendations")
+async def get_learning_recommendations(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    subject: str = Form(...),
+    level: str = Form(...),
+    quiz_results: str = Form(...),  # строка, т.к. приходит JSON
+    incorrect_questions: str = Form(...)  # строка, т.к. приходит JSON
+):
+    import json
+    try:
+        # Проверяем, что строки не пустые
+        quiz_results_data = json.loads(quiz_results) if quiz_results.strip() else {}
+        incorrect_questions_data = json.loads(incorrect_questions) if incorrect_questions.strip() else []
+        
+        # Если данных недостаточно, возвращаем базовые рекомендации
+        if not quiz_results_data or not incorrect_questions_data:
+            return {
+                "message": "Недостаточно данных для детальных рекомендаций",
+                "weak_areas": ["Общие темы"],
+                "learning_resources": [
+                    {"title": "Базовый материал по предмету", "url": "https://www.coursera.org/"}
+                ],
+                "practice_exercises": [
+                    "Начните с изучения базовых концепций",
+                    "Решите простые задачи для закрепления материала"
+                ],
+                "study_schedule": [
+                    {"day": "День 1", "tasks": ["Ознакомление с предметом"]},
+                    {"day": "День 2", "tasks": ["Изучение основных понятий"]},
+                    {"day": "День 3", "tasks": ["Практика"]}
+                ],
+                "expected_outcomes": [
+                    "Понимание базовых концепций",
+                    "Подготовка к более сложным темам"
+                ]
+            }
+        
+        recommendations = await generate_learning_recommendations(
+            subject=subject,
+            level=level,
+            quiz_results=quiz_results_data,
+            incorrect_questions=incorrect_questions_data
+        )
+        if not recommendations:
+            raise HTTPException(status_code=500, detail="Не удалось сгенерировать рекомендации")
+        return recommendations
+    except json.JSONDecodeError:
+        # В случае ошибки разбора JSON, возвращаем базовые рекомендации
+        return {
+            "message": "Ошибка при разборе данных",
+            "weak_areas": ["Общие темы"],
+            "learning_resources": [
+                {"title": "Базовый материал по предмету", "url": "https://www.coursera.org/"}
+            ],
+            "practice_exercises": [
+                "Начните с изучения базовых концепций",
+                "Решите простые задачи для закрепления материала"
+            ],
+            "study_schedule": [
+                {"day": "День 1", "tasks": ["Ознакомление с предметом"]},
+                {"day": "День 2", "tasks": ["Изучение основных понятий"]},
+                {"day": "День 3", "tasks": ["Практика"]}
+            ],
+            "expected_outcomes": [
+                "Понимание базовых концепций",
+                "Подготовка к более сложным темам"
+            ]
+        }
+    except Exception as e:
+        print(f"Error generating learning recommendations: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Ошибка генерации рекомендаций: {str(e)}")

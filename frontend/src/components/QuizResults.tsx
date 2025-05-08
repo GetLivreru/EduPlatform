@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getUserQuizResults, getQuiz, getQuizResult, QuizResult, Quiz } from '../services/api';
+import { getUserQuizResults, getQuiz, getQuizResult, QuizResult, Quiz, getLearningRecommendations } from '../services/api';
 import styled from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 
@@ -240,6 +240,61 @@ const PrimaryButton = styled(Button)`
   }
 `;
 
+const LearningRecommendations = styled.div`
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+`;
+
+const RecommendationSection = styled.div`
+  margin-bottom: 20px;
+`;
+
+const RecommendationTitle = styled.h4`
+  color: #2c3e50;
+  margin-bottom: 10px;
+  font-size: 18px;
+`;
+
+const RecommendationList = styled.ul`
+  list-style: none;
+  padding: 0;
+  margin: 0;
+`;
+
+const RecommendationItem = styled.li`
+  padding: 10px;
+  background-color: white;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+`;
+
+const ResourceLink = styled.a`
+  color: #3498db;
+  text-decoration: none;
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+const RecommendationButton = styled(Link)`
+  padding: 10px 20px;
+  background-color: #4caf50;
+  color: white;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  
+  &:hover {
+    background-color: #43a047;
+  }
+`;
+
 const QuizResults: React.FC = () => {
   const { user } = useAuth();
   const [results, setResults] = useState<QuizResult[]>([]);
@@ -247,6 +302,7 @@ const QuizResults: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedResult, setSelectedResult] = useState<QuizResult | null>(null);
   const [quizDetails, setQuizDetails] = useState<Quiz | null>(null);
+  const [learningRecommendations, setLearningRecommendations] = useState<any>(null);
 
   // Моковые данные для разных квизов (по id или категории)
   const getWeakTopics = (quiz: Quiz | null) => {
@@ -302,6 +358,15 @@ const QuizResults: React.FC = () => {
           if (data[0].quiz_id) {
             const quizData = await getQuiz(data[0].quiz_id);
             setQuizDetails(quizData);
+            
+            // Fetch learning recommendations using the API function
+            const recommendations = await getLearningRecommendations(
+              quizData.category || 'General',
+              quizData.level || 'Intermediate',
+              { score: data[0].score },
+              data[0].incorrect_questions || []
+            );
+            setLearningRecommendations(recommendations);
           }
         }
         setLoading(false);
@@ -510,6 +575,71 @@ const QuizResults: React.FC = () => {
                 </div>
               ))}
             </div>
+            <div style={{ marginTop: 20 }}>
+              <RecommendationButton to={`/learning-recommendations/${selectedResult.quiz_id}`}>
+                📚 Получить рекомендации по обучению
+              </RecommendationButton>
+            </div>
+          </>
+        )}
+        
+        {learningRecommendations && (
+          <>
+            <SectionTitle>Персональные рекомендации по обучению</SectionTitle>
+            
+            <LearningRecommendations>
+              <RecommendationSection>
+                <RecommendationTitle>Слабые места</RecommendationTitle>
+                <RecommendationList>
+                  {learningRecommendations.weak_areas.map((area: string, index: number) => (
+                    <RecommendationItem key={index}>{area}</RecommendationItem>
+                  ))}
+                </RecommendationList>
+              </RecommendationSection>
+
+              <RecommendationSection>
+                <RecommendationTitle>Рекомендуемые ресурсы</RecommendationTitle>
+                <RecommendationList>
+                  {learningRecommendations.learning_resources.map((resource: any, index: number) => (
+                    <RecommendationItem key={index}>
+                      <div>{resource.title}</div>
+                      <ResourceLink href={resource.url} target="_blank">
+                        Перейти к ресурсу
+                      </ResourceLink>
+                    </RecommendationItem>
+                  ))}
+                </RecommendationList>
+              </RecommendationSection>
+
+              <RecommendationSection>
+                <RecommendationTitle>Практические упражнения</RecommendationTitle>
+                <RecommendationList>
+                  {learningRecommendations.practice_exercises.map((exercise: string, index: number) => (
+                    <RecommendationItem key={index}>{exercise}</RecommendationItem>
+                  ))}
+                </RecommendationList>
+              </RecommendationSection>
+
+              <RecommendationSection>
+                <RecommendationTitle>План обучения на неделю</RecommendationTitle>
+                <RecommendationList>
+                  {learningRecommendations.study_schedule.map((day: any, index: number) => (
+                    <RecommendationItem key={index}>
+                      <strong>{day.day}:</strong> {day.tasks.join(', ')}
+                    </RecommendationItem>
+                  ))}
+                </RecommendationList>
+              </RecommendationSection>
+
+              <RecommendationSection>
+                <RecommendationTitle>Ожидаемые результаты</RecommendationTitle>
+                <RecommendationList>
+                  {learningRecommendations.expected_outcomes.map((outcome: string, index: number) => (
+                    <RecommendationItem key={index}>{outcome}</RecommendationItem>
+                  ))}
+                </RecommendationList>
+              </RecommendationSection>
+            </LearningRecommendations>
           </>
         )}
       </MainContent>
