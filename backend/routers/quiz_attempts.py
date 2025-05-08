@@ -290,10 +290,15 @@ async def get_learning_recommendations(
     incorrect_questions: str = Form(...)  # строка, т.к. приходит JSON
 ):
     import json
+    print(f"Received learning recommendations request for subject: {subject}, level: {level}")
     try:
         # Проверяем, что строки не пустые
         quiz_results_data = json.loads(quiz_results) if quiz_results.strip() else {}
         incorrect_questions_data = json.loads(incorrect_questions) if incorrect_questions.strip() else []
+    
+        print(f"Parsed quiz_results: {quiz_results_data}")
+        print(f"Parsed incorrect_questions ({len(incorrect_questions_data)} items)")
+        
         
         # Если данных недостаточно, возвращаем базовые рекомендации
         if not quiz_results_data or not incorrect_questions_data:
