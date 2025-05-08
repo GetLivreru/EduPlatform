@@ -13,7 +13,7 @@ async def generate_learning_recommendations(subject: str, level: str, quiz_resul
     - Overall Score: {quiz_results.get('score', 0)}%
     - Incorrect Questions: {json.dumps(incorrect_questions)}
     
-    Please provide your recommendations in valid JSON format with the following structure:
+    Please provide recommendations in valid JSON format with the following structure:
     {{
         "weak_areas": ["area1", "area2"],
         "learning_resources": [
@@ -28,7 +28,8 @@ async def generate_learning_recommendations(subject: str, level: str, quiz_resul
         "expected_outcomes": ["outcome1", "outcome2"]
     }}
     
-    IMPORTANT: The response must be a valid JSON object.
+    THE RESPONSE MUST BE PURE JSON WITHOUT ANY MARKDOWN FORMATTING OR CODE BLOCKS.
+    DO NOT INCLUDE ```json, ```, OR ANY OTHER MARKDOWN SYNTAX.
     """
     
     try:
@@ -36,17 +37,27 @@ async def generate_learning_recommendations(subject: str, level: str, quiz_resul
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "You are an expert educational content generator. Always respond with valid JSON."},
+                {"role": "system", "content": "You are an expert educational content generator. Always respond with pure JSON, never using markdown formatting or code blocks."},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.7,
-            max_tokens=1000
+            max_tokens=1000,
+            response_format={"type": "json_object"}  # Важно! Заставляет API возвращать чистый JSON
         )
         
         content = response.choices[0].message.content
-        print(f"Response received from OpenAI. Attempting to parse JSON")
+        print(f"Response received from OpenAI: {content[:50]}...")
+        
+        # Удаляем возможные маркеры Markdown, если они все-таки появляются
+        if content.startswith("```"):
+            # Находим конец блока кода
+            content = content.split("```", 2)[1]
+            if content.startswith("json"):
+                content = content[4:].strip()  # Удаляем 'json' и начальные пробелы
+            if content.endswith("```"):
+                content = content[:-3].strip()  # Удаляем закрывающие маркеры и конечные пробелы
+        
         try:
-            # Попытка парсинга JSON
             parsed_content = json.loads(content)
             return {
                 "subject": subject,
@@ -60,16 +71,36 @@ async def generate_learning_recommendations(subject: str, level: str, quiz_resul
         except json.JSONDecodeError as json_err:
             print(f"Failed to parse OpenAI response as JSON: {str(json_err)}")
             print(f"Raw response: {content}")
-            # Создаем базовый формат рекомендаций, если не удалось распарсить ответ
+            
+            # Пытаемся извлечь JSON даже с ошибками форматирования
+            # Чистим ответ от маркдаун форматирования если он всё ещё есть
+            import re
+            json_match = re.search(r'({.*})', content, re.DOTALL)
+            if json_match:
+                try:
+                    cleaned_json = json_match.group(1)
+                    parsed_content = json.loads(cleaned_json)
+                    return {
+                        "subject": subject,
+                        "level": level,
+                        "weak_areas": parsed_content.get("weak_areas", []),
+                        "learning_resources": parsed_content.get("learning_resources", []),
+                        "practice_exercises": parsed_content.get("practice_exercises", []),
+                        "study_schedule": parsed_content.get("study_schedule", []),
+                        "expected_outcomes": parsed_content.get("expected_outcomes", [])
+                    }
+                except:
+                    pass
+                    
+            # Если всё равно не получилось, возвращаем базовый шаблон
             return {
                 "subject": subject,
                 "level": level,
-                "weak_areas": ["Parsing error - check raw response"],
+                "weak_areas": ["Parsing error - Unable to extract JSON from response"],
                 "learning_resources": [{"title": "Default resource", "url": "https://www.coursera.org/"}],
                 "practice_exercises": ["Default exercise"],
                 "study_schedule": [{"day": "Day 1", "tasks": ["Default task"]}],
-                "expected_outcomes": ["Default outcome"],
-                "raw_response": content  # Добавляем необработанный ответ для отладки
+                "expected_outcomes": ["Default outcome"]
             }
     except Exception as e:
         print(f"Error generating learning recommendations: {str(e)}")
