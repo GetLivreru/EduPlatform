@@ -244,7 +244,7 @@ const App: React.FC = () => {
                         <Route path="/register" element={<Register />} />
                         <Route path="/quiz/:quizId" element={<QuizAttempt />} />
                         <Route path="/quiz-results" element={<QuizResults />} />
-                        <Route path="/my-learning" element={<Layout><MyLearning /></Layout>} />
+                        <Route path="/my-learning" element={<MyLearning />} />
                         <Route path="/quiz-result/:attemptId" element={<QuizResultPage />} />
                         <Route
                             path="/admin/quizzes/new"
