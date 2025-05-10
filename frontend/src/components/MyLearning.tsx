@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getUserQuizResults, getQuiz, QuizResult, Quiz, getLearningRecommendations } from '../services/api';
+import { getUserQuizResults, getSavedLearningRecommendations } from '../services/api';
 import styled from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 
@@ -26,522 +26,434 @@ const MainContent = styled.div`
   background-color: #fff;
   border-radius: 0 8px 8px 0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  padding: 20px;
+  padding: 30px;
   overflow-y: auto;
   max-height: calc(100vh - 140px);
 `;
 
-const PageTitle = styled.h1`
-  font-size: 24px;
-  color: #333;
-  margin-bottom: 20px;
-  padding: 15px;
-  border-bottom: 1px solid #e0e0e0;
+const SidebarHeader = styled.h2`
+  padding: 20px;
+  margin: 0;
+  font-size: 1.2rem;
+  border-bottom: 1px solid #e1e5ea;
 `;
 
-const ResultItem = styled.div<{ active: boolean }>`
-  padding: 15px;
-  border-left: 4px solid ${props => props.active ? '#3f51b5' : 'transparent'};
-  background-color: ${props => props.active ? '#e8eaf6' : 'transparent'};
+const QuizItem = styled.div<{ active: boolean }>`
+  padding: 15px 20px;
   cursor: pointer;
-  transition: all 0.2s;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid #e1e5ea;
+  background-color: ${props => props.active ? '#e1e9f6' : 'transparent'};
+  transition: background-color 0.2s;
 
   &:hover {
-    background-color: ${props => props.active ? '#e8eaf6' : '#f0f2f5'};
+    background-color: ${props => props.active ? '#e1e9f6' : '#f0f3f7'};
   }
 `;
 
-const ResultTitle = styled.h3`
-  font-size: 16px;
-  margin: 0 0 8px 0;
+const QuizTitle = styled.h3`
+  margin: 0 0 5px 0;
+  font-size: 1rem;
+  font-weight: 600;
   color: #333;
 `;
 
-const ResultMeta = styled.div`
+const QuizMeta = styled.div`
   display: flex;
-  justify-content: space-between;
-  font-size: 12px;
+  align-items: center;
+  margin-top: 5px;
+  font-size: 0.9rem;
   color: #666;
 `;
 
-const ResultScore = styled.span<{ score: number }>`
-  font-weight: bold;
-  color: ${props => {
+const ScoreBadge = styled.span<{ score: number }>`
+  display: inline-block;
+  padding: 2px 8px;
+  margin-right: 10px;
+  background-color: ${props => {
     if (props.score >= 80) return '#4caf50';
-    if (props.score >= 60) return '#ff9800';
+    if (props.score >= 60) return '#8bc34a';
+    if (props.score >= 40) return '#ffeb3b';
     return '#f44336';
   }};
+  color: ${props => props.score >= 40 && props.score < 60 ? '#333' : '#fff'};
+  border-radius: 12px;
+  font-weight: 500;
+  font-size: 0.8rem;
 `;
 
-const Category = styled.span`
-  background-color: #e3f2fd;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 12px;
+const ContentHeader = styled.div`
+  margin-bottom: 30px;
+  border-bottom: 1px solid #e1e5ea;
+  padding-bottom: 20px;
 `;
 
-const EmptyResults = styled.div`
-  text-align: center;
-  padding: 30px;
+const ContentTitle = styled.h1`
+  margin: 0 0 10px 0;
+  font-size: 1.8rem;
+  color: #333;
+`;
+
+const ContentMeta = styled.div`
+  display: flex;
+  align-items: center;
+  margin-top: 15px;
+  font-size: 0.9rem;
   color: #666;
+`;
+
+const NoResults = styled.div`
+  text-align: center;
+  padding: 40px 0;
+  color: #666;
+`;
+
+// Компоненты для плана обучения
+const LearningSection = styled.div`
+  margin-bottom: 30px;
+`;
+
+const SectionTitle = styled.h2`
+  margin: 0 0 15px 0;
+  font-size: 1.5rem;
+  color: #333;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e9ecef;
+`;
+
+const WeakAreasList = styled.ul`
+  list-style-type: none;
+  padding: 0;
+  margin: 0 0 20px 0;
+`;
+
+const WeakAreaItem = styled.li`
+  padding: 8px 0;
+  margin-bottom: 8px;
+  border-bottom: 1px dashed #e9ecef;
+  font-size: 1rem;
+`;
+
+const ResourcesList = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  margin-bottom: 20px;
+`;
+
+const ResourceCard = styled.a`
+  display: block;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s, box-shadow 0.2s;
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+`;
+
+const ResourceTitle = styled.h3`
+  margin: 0 0 10px 0;
+  font-size: 1.1rem;
+  color: #0366d6;
+`;
+
+const ScheduleSection = styled.div`
+  margin-top: 30px;
+`;
+
+const ScheduleDay = styled.div`
+  margin-bottom: 15px;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+`;
+
+const DayTitle = styled.h3`
+  margin: 0 0 10px 0;
+  font-size: 1.1rem;
+  color: #333;
+`;
+
+const TasksList = styled.ul`
+  padding-left: 20px;
+  margin: 0;
+`;
+
+const TaskItem = styled.li`
+  margin-bottom: 5px;
+`;
+
+const ExercisesList = styled.ul`
+  list-style-type: none;
+  padding: 0;
+`;
+
+const ExerciseItem = styled.li`
+  padding: 10px 15px;
+  margin-bottom: 10px;
+  background-color: #f5f7fa;
+  border-radius: 8px;
+  border-left: 4px solid #0366d6;
+`;
+
+const OutcomesList = styled.ul`
+  list-style-type: none;
+  padding: 0;
+`;
+
+const OutcomeItem = styled.li`
+  padding: 8px 0;
+  border-bottom: 1px dashed #e9ecef;
+  display: flex;
+  align-items: center;
+
+  &:before {
+    content: '✓';
+    margin-right: 10px;
+    color: #4caf50;
+    font-weight: bold;
+  }
 `;
 
 const LoadingMessage = styled.div`
   text-align: center;
-  padding: 30px;
+  padding: 40px 0;
   color: #666;
 `;
 
-const SectionTitle = styled.h3`
-  font-size: 20px;
-  margin: 30px 0 15px 0;
-  color: #333;
-  border-bottom: 1px solid #e0e0e0;
-  padding-bottom: 10px;
+const ErrorMessage = styled.div`
+  text-align: center;
+  padding: 40px 0;
+  color: #d32f2f;
 `;
 
-const ScoreCircle = styled.div<{ score: number }>`
-  width: 120px;
-  height: 120px;
-  margin: 0 auto 20px;
-  border-radius: 50%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  background-color: ${props => {
-    if (props.score >= 80) return '#e8f5e9';
-    if (props.score >= 60) return '#fff8e1';
-    return '#ffebee';
-  }};
-  border: 4px solid ${props => {
-    if (props.score >= 80) return '#4caf50';
-    if (props.score >= 60) return '#ff9800';
-    return '#f44336';
-  }};
-`;
+interface QuizResult {
+  _id: string;
+  quiz_id: string;
+  quiz_title: string;
+  user_id: string;
+  score: number;
+  completed_at: string;
+}
 
-const ScoreValue = styled.div<{ score: number }>`
-  font-size: 32px;
-  font-weight: bold;
-  color: ${props => {
-    if (props.score >= 80) return '#2e7d32';
-    if (props.score >= 60) return '#e65100';
-    return '#c62828';
-  }};
-`;
+interface LearningResource {
+  title: string;
+  url: string;
+}
 
-const LearningMaterial = styled.div`
-  background-color: #f5f7fa;
-  border-radius: 8px;
-  padding: 15px;
-  margin-bottom: 15px;
-`;
+interface StudyDay {
+  day: string;
+  tasks: string[];
+}
 
-const LearningTopic = styled.h4`
-  font-size: 16px;
-  margin: 0 0 10px 0;
-  color: #333;
-`;
-
-const LearningDescription = styled.p`
-  color: #666;
-  font-size: 14px;
-  line-height: 1.5;
-`;
-
-const LearningResourceLink = styled.a`
-  display: block;
-  margin-top: 10px;
-  color: #3f51b5;
-  text-decoration: none;
-  font-weight: 500;
-
-  &:hover {
-    text-decoration: underline;
-  }
-`;
-
-const PrimaryButton = styled(Link)`
-  padding: 10px 20px;
-  border-radius: 6px;
-  font-weight: 500;
-  text-decoration: none;
-  transition: all 0.2s;
-  background-color: #3f51b5;
-  color: white;
-  display: inline-block;
-  
-  &:hover {
-    background-color: #303f9f;
-    transform: translateY(-2px);
-  }
-`;
-
-const LearningRecommendations = styled.div`
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 20px;
-`;
-
-const RecommendationSection = styled.div`
-  margin-bottom: 20px;
-`;
-
-const RecommendationTitle = styled.h4`
-  color: #2c3e50;
-  margin-bottom: 10px;
-  font-size: 18px;
-`;
-
-const RecommendationList = styled.ul`
-  list-style: none;
-  padding: 0;
-  margin: 0;
-`;
-
-const RecommendationItem = styled.li`
-  padding: 10px;
-  background-color: white;
-  border-radius: 6px;
-  margin-bottom: 8px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-`;
-
-const ResourceLink = styled.a`
-  color: #3498db;
-  text-decoration: none;
-  &:hover {
-    text-decoration: underline;
-  }
-`;
-
-const RecommendationButton = styled(Link)`
-  padding: 10px 20px;
-  background-color: #4caf50;
-  color: white;
-  border-radius: 6px;
-  text-decoration: none;
-  font-weight: 500;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  
-  &:hover {
-    background-color: #43a047;
-  }
-`;
+interface LearningRecommendation {
+  id?: string;
+  user_id?: string;
+  quiz_id?: string;
+  subject?: string;
+  level?: string;
+  message?: string;
+  weak_areas: string[];
+  learning_resources: LearningResource[];
+  practice_exercises: string[];
+  study_schedule: StudyDay[];
+  expected_outcomes: string[];
+  created_at?: string;
+}
 
 const MyLearning: React.FC = () => {
-  const { user } = useAuth();
   const [results, setResults] = useState<QuizResult[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [selectedQuiz, setSelectedQuiz] = useState<string | null>(null);
+  const [recommendation, setRecommendation] = useState<LearningRecommendation | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedResult, setSelectedResult] = useState<QuizResult | null>(null);
-  const [quizDetails, setQuizDetails] = useState<Quiz | null>(null);
-  const [learningRecommendations, setLearningRecommendations] = useState<any>(null);
-
-  // Моковые данные для разных квизов (по id или категории)
-  const getWeakTopics = (quiz: Quiz | null) => {
-    if (!quiz) return [];
-    if (quiz.category?.toLowerCase().includes('math')) return ['Проценты', 'Линейные уравнения'];
-    if (quiz.category?.toLowerCase().includes('history')) return ['XIX век', 'Великая Отечественная война'];
-    return ['Общие темы'];
-  };
-
-  const getWeekPlan = (quiz: Quiz | null) => {
-    if (!quiz) return [];
-    if (quiz.category?.toLowerCase().includes('math')) return [
-      { day: 'Пн', tasks: ['Видеоурок', 'Карточки'], done: true },
-      { day: 'Вт', tasks: ['Мини-тест', 'Практика'], done: false },
-      { day: 'Ср', tasks: ['Повторение'], done: false },
-      { day: 'Чт', tasks: ['Видеоурок'], done: false },
-      { day: 'Пт', tasks: ['Практика'], done: false },
-      { day: 'Сб', tasks: ['Тестирование'], done: false },
-      { day: 'Вс', tasks: ['Отдых'], done: false },
-    ];
-    if (quiz.category?.toLowerCase().includes('history')) return [
-      { day: 'Пн', tasks: ['Чтение', 'Карточки'], done: true },
-      { day: 'Вт', tasks: ['Мини-тест'], done: false },
-      { day: 'Ср', tasks: ['Повторение'], done: false },
-      { day: 'Чт', tasks: ['Видео'], done: false },
-      { day: 'Пт', tasks: ['Практика'], done: false },
-      { day: 'Сб', tasks: ['Тестирование'], done: false },
-      { day: 'Вс', tasks: ['Отдых'], done: false },
-    ];
-    return [
-      { day: 'Пн', tasks: ['Введение'], done: true },
-      { day: 'Вт', tasks: ['Практика'], done: false },
-      { day: 'Ср', tasks: ['Повторение'], done: false },
-      { day: 'Чт', tasks: ['Видео'], done: false },
-      { day: 'Пт', tasks: ['Практика'], done: false },
-      { day: 'Сб', tasks: ['Тестирование'], done: false },
-      { day: 'Вс', tasks: ['Отдых'], done: false },
-    ];
-  };
-
-  const getAchievements = (quiz: Quiz | null) => [
-    { icon: '✅', label: 'Пройдено 5 квизов' },
-    { icon: '🧠', label: 'Изучено 3 темы' },
-  ];
-
-  const getProgress = (quiz: Quiz | null) => 54;
+  const { user } = useAuth();
 
   useEffect(() => {
-    const fetchResults = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const data = await getUserQuizResults();
-        setResults(data);
-        if (data.length > 0) {
-          setSelectedResult(data[0]);
-          if (data[0].quiz_id) {
-            const quizData = await getQuiz(data[0].quiz_id);
-            setQuizDetails(quizData);
-            
-            try {
-              // Используем обработку ошибок при запросе рекомендаций
-              const recommendations = await getLearningRecommendations(
-                quizData.category || 'General',
-                quizData.level || 'Intermediate',
-                { score: data[0].score },
-                data[0].incorrect_questions || []
-              );
-              setLearningRecommendations(recommendations);
-            } catch (err) {
-              console.error('Ошибка загрузки рекомендаций:', err);
-              // Продолжаем работу даже без рекомендаций
-            }
-          }
+        const quizResults = await getUserQuizResults();
+        setResults(quizResults);
+        
+        if (quizResults.length > 0) {
+          setSelectedQuiz(quizResults[0].quiz_id);
         }
+        
         setLoading(false);
       } catch (err) {
-        setError('Ошибка загрузки');
+        console.error('Error fetching quiz results:', err);
+        setError('Не удалось загрузить результаты квизов');
         setLoading(false);
       }
     };
-    fetchResults();
+
+    fetchData();
   }, []);
 
-  // При выборе результата — подгружаем детали квиза
-  const selectResult = async (result: QuizResult) => {
-    setSelectedResult(result);
-    try {
-      if (result.quiz_id) {
-        const quizData = await getQuiz(result.quiz_id);
-        setQuizDetails(quizData);
-        
+  useEffect(() => {
+    const fetchRecommendations = async () => {
+      if (selectedQuiz) {
         try {
-          // Загружаем рекомендации для выбранного квиза
-          const recommendations = await getLearningRecommendations(
-            quizData.category || 'General',
-            quizData.level || 'Intermediate',
-            { score: result.score },
-            result.incorrect_questions || []
-          );
-          setLearningRecommendations(recommendations);
+          setLoading(true);
+          // Используем новый эндпоинт для получения сохраненных рекомендаций
+          const data = await getSavedLearningRecommendations(selectedQuiz);
+          setRecommendation(data);
+          setLoading(false);
         } catch (err) {
-          console.error('Ошибка загрузки рекомендаций:', err);
-          // Продолжаем работу даже без рекомендаций
-          setLearningRecommendations(null);
+          console.error('Error fetching learning recommendations:', err);
+          setError('Не удалось загрузить рекомендации по обучению');
+          setLoading(false);
         }
       }
-    } catch (err) {
-      console.error('Error fetching quiz details:', err);
-    }
+    };
+
+    fetchRecommendations();
+  }, [selectedQuiz]);
+
+  const handleQuizSelect = (quizId: string) => {
+    setSelectedQuiz(quizId);
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('ru-RU', {
+    return new Date(dateString).toLocaleString('ru-RU', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
-    }).format(date);
+    });
   };
 
-  if (loading) return <LoadingMessage>Загрузка...</LoadingMessage>;
-  if (error) return <div>{error}</div>;
+  if (!user) {
+    return (
+      <PageContainer>
+        <NoResults>
+          <h2>Требуется авторизация</h2>
+          <p>Пожалуйста, войдите в систему, чтобы увидеть ваш план обучения.</p>
+          <Link to="/login">Войти</Link>
+        </NoResults>
+      </PageContainer>
+    );
+  }
 
   return (
     <PageContainer>
-      {/* Sidebar — список всех результатов */}
       <Sidebar>
-        <PageTitle>Моё обучение</PageTitle>
+        <SidebarHeader>Пройденные квизы</SidebarHeader>
         {results.length === 0 ? (
-          <EmptyResults>
-            <p>У вас пока нет пройденных квизов</p>
-            <Link to="/">Пройти квиз</Link>
-          </EmptyResults>
+          <NoResults>
+            <p>Нет пройденных квизов</p>
+          </NoResults>
         ) : (
           results.map((result) => (
-            <ResultItem
-              key={result._id}
-              active={selectedResult?._id === result._id}
-              onClick={() => selectResult(result)}
+            <QuizItem 
+              key={result._id} 
+              active={selectedQuiz === result.quiz_id}
+              onClick={() => handleQuizSelect(result.quiz_id)}
             >
-              <ResultTitle>{result.quiz_title}</ResultTitle>
-              <ResultMeta>
-                <Category>{result.quiz_category || 'Общее'}</Category>
-                <ResultScore score={result.score}>{result.score.toFixed(1)}%</ResultScore>
-              </ResultMeta>
-              <ResultMeta>
-                <span>Пройден: {formatDate(result.completed_at)}</span>
-              </ResultMeta>
-            </ResultItem>
+              <QuizTitle>{result.quiz_title}</QuizTitle>
+              <QuizMeta>
+                <ScoreBadge score={result.score}>{Math.round(result.score)}%</ScoreBadge>
+                <span>{formatDate(result.completed_at)}</span>
+              </QuizMeta>
+            </QuizItem>
           ))
         )}
       </Sidebar>
-      {/* Правая часть — индивидуальный путь обучения для выбранного результата */}
+
       <MainContent>
-        <div style={{ fontSize: 20, marginBottom: 24 }}>
-          Привет, {user?.name || 'друг'}! Вот твой персональный план.
-        </div>
-        {selectedResult && quizDetails ? (
+        {loading ? (
+          <LoadingMessage>Загрузка...</LoadingMessage>
+        ) : error ? (
+          <ErrorMessage>{error}</ErrorMessage>
+        ) : !selectedQuiz ? (
+          <NoResults>
+            <h2>Выберите квиз</h2>
+            <p>Выберите пройденный квиз слева, чтобы увидеть персонализированный план обучения.</p>
+          </NoResults>
+        ) : recommendation ? (
           <>
-            {/* 2. Результаты выбранного квиза */}
-            <div style={{ background: '#fff', borderRadius: 10, boxShadow: '0 2px 8px #0001', padding: 24, marginBottom: 32 }}>
-              <div style={{ fontSize: 18, fontWeight: 500, marginBottom: 8 }}>
-                Квиз: {quizDetails.title}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
-                <ScoreCircle score={selectedResult.score} style={{ width: 100, height: 100, fontSize: 24 }}>
-                  <ScoreValue score={selectedResult.score}>{Math.round(selectedResult.score)}%</ScoreValue>
-                </ScoreCircle>
-                <div>
-                  <div style={{ fontSize: 16, marginBottom: 4 }}>
-                    Балл: <span style={{ fontWeight: 600, color: selectedResult.score >= 80 ? '#4caf50' : selectedResult.score >= 60 ? '#ff9800' : '#f44336' }}>{Math.round(selectedResult.score)}/100</span>
-                  </div>
-                  <div style={{ fontSize: 15, marginBottom: 4 }}>Уровень: B1 / Intermediate</div>
-                  <div style={{ fontSize: 15, marginBottom: 4 }}>Слабые темы: {getWeakTopics(quizDetails).join(', ')}</div>
-                  <PrimaryButton to={"/quiz/" + selectedResult.quiz_id}>🔁 Пройти ещё раз</PrimaryButton>
-                </div>
-              </div>
-            </div>
-            {/* 3. Индивидуальный учебный план */}
-            <SectionTitle>Учебный план на неделю</SectionTitle>
-            <div style={{ display: 'flex', gap: 12, marginBottom: 32, overflowX: 'auto', paddingBottom: 10 }}>
-              {getWeekPlan(quizDetails).map((d, i) => (
-                <div key={i} style={{ background: d.done ? '#e8f5e9' : '#f5f5f5', borderRadius: 8, padding: 12, minWidth: 80, textAlign: 'center', border: d.done ? '2px solid #4caf50' : '1px solid #ddd' }}>
-                  <div style={{ fontWeight: 600 }}>{d.day}</div>
-                  <div style={{ fontSize: 13, margin: '6px 0' }}>{d.tasks.join(' + ')}</div>
-                  <div>{d.done ? '✔️' : ''}</div>
-                </div>
-              ))}
-            </div>
-            <div style={{ height: 12, background: '#eee', borderRadius: 6, marginBottom: 32, overflow: 'hidden' }}>
-              <div style={{ width: getProgress(quizDetails) + '%', background: '#3f51b5', height: '100%' }}></div>
-            </div>
-            <div style={{ marginBottom: 32, color: '#666' }}>Прогресс учебного плана: <b>{getProgress(quizDetails)}%</b></div>
-            {/* 4. Рекомендованные материалы */}
-            <SectionTitle>Тебе стоит изучить</SectionTitle>
-            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 32 }}>
-              <LearningMaterial>
-                <LearningTopic>📹 Видео: Объяснение процентов</LearningTopic>
-                <LearningDescription>Краткое видео по теме "Проценты" для закрепления материала.</LearningDescription>
-                <LearningResourceLink href="https://www.youtube.com/watch?v=Vn8phH0k5HI" target="_blank">Смотреть</LearningResourceLink>
-              </LearningMaterial>
-              <LearningMaterial>
-                <LearningTopic>📄 Статья: Как решать линейные уравнения</LearningTopic>
-                <LearningDescription>Пошаговое руководство по решению линейных уравнений.</LearningDescription>
-                <LearningResourceLink href="https://ege-study.ru/article/lineinye-uravneniya/" target="_blank">Читать</LearningResourceLink>
-              </LearningMaterial>
-              <LearningMaterial>
-                <LearningTopic>🔗 Внешняя ссылка: Khan Academy: Линейные уравнения</LearningTopic>
-                <LearningDescription>Интерактивные уроки и задачи по линейным уравнениям.</LearningDescription>
-                <LearningResourceLink href="https://ru.khanacademy.org/math/algebra/one-variable-linear-equations" target="_blank">Перейти</LearningResourceLink>
-              </LearningMaterial>
-            </div>
-            {/* 5. Генерация контента ИИ */}
-            <SectionTitle>Сгенерировать шпаргалку</SectionTitle>
-            <div style={{ marginBottom: 16 }}>
-              Быстрая шпаргалка по темам: <b>{getWeakTopics(quizDetails).join(', ')}</b>
-            </div>
-            <PrimaryButton to="#">Создать новый квиз по моим ошибкам</PrimaryButton>
-            {/* 6. Прогресс и достижения */}
-            <SectionTitle>Достижения</SectionTitle>
-            <div style={{ display: 'flex', gap: 16, marginBottom: 32 }}>
-              {getAchievements(quizDetails).map((a, i) => (
-                <div key={i} style={{ background: '#f5f5f5', borderRadius: 8, padding: 16, minWidth: 120, textAlign: 'center', fontSize: 18 }}>
-                  <div style={{ fontSize: 28 }}>{a.icon}</div>
-                  <div>{a.label}</div>
-                </div>
-              ))}
-            </div>
-            <div style={{ marginTop: 20 }}>
-              <RecommendationButton to={`/learning-recommendations/${selectedResult.quiz_id}`}>
-                📚 Получить рекомендации по обучению
-              </RecommendationButton>
-            </div>
+            <ContentHeader>
+              <ContentTitle>Ваш персональный план обучения</ContentTitle>
+              <ContentMeta>
+                Дата создания: {recommendation.created_at ? formatDate(recommendation.created_at) : 'Только что'}
+              </ContentMeta>
+            </ContentHeader>
+
+            {recommendation.weak_areas && recommendation.weak_areas.length > 0 && (
+              <LearningSection>
+                <SectionTitle>Области для улучшения</SectionTitle>
+                <WeakAreasList>
+                  {recommendation.weak_areas.map((area, index) => (
+                    <WeakAreaItem key={index}>{area}</WeakAreaItem>
+                  ))}
+                </WeakAreasList>
+              </LearningSection>
+            )}
+
+            {recommendation.learning_resources && recommendation.learning_resources.length > 0 && (
+              <LearningSection>
+                <SectionTitle>Рекомендуемые ресурсы</SectionTitle>
+                <ResourcesList>
+                  {recommendation.learning_resources.map((resource, index) => (
+                    <ResourceCard key={index} href={resource.url} target="_blank" rel="noopener noreferrer">
+                      <ResourceTitle>{resource.title}</ResourceTitle>
+                    </ResourceCard>
+                  ))}
+                </ResourcesList>
+              </LearningSection>
+            )}
+
+            {recommendation.practice_exercises && recommendation.practice_exercises.length > 0 && (
+              <LearningSection>
+                <SectionTitle>Практические упражнения</SectionTitle>
+                <ExercisesList>
+                  {recommendation.practice_exercises.map((exercise, index) => (
+                    <ExerciseItem key={index}>{exercise}</ExerciseItem>
+                  ))}
+                </ExercisesList>
+              </LearningSection>
+            )}
+
+            {recommendation.study_schedule && recommendation.study_schedule.length > 0 && (
+              <ScheduleSection>
+                <SectionTitle>График обучения</SectionTitle>
+                {recommendation.study_schedule.map((day, index) => (
+                  <ScheduleDay key={index}>
+                    <DayTitle>{day.day}</DayTitle>
+                    <TasksList>
+                      {day.tasks.map((task, taskIndex) => (
+                        <TaskItem key={taskIndex}>{task}</TaskItem>
+                      ))}
+                    </TasksList>
+                  </ScheduleDay>
+                ))}
+              </ScheduleSection>
+            )}
+
+            {recommendation.expected_outcomes && recommendation.expected_outcomes.length > 0 && (
+              <LearningSection>
+                <SectionTitle>Ожидаемые результаты</SectionTitle>
+                <OutcomesList>
+                  {recommendation.expected_outcomes.map((outcome, index) => (
+                    <OutcomeItem key={index}>{outcome}</OutcomeItem>
+                  ))}
+                </OutcomesList>
+              </LearningSection>
+            )}
           </>
-        ) : results.length > 0 ? (
-          <div>Выберите квиз из списка для отображения персонального плана обучения</div>
-        ) : null}
-        
-        {selectedResult && learningRecommendations && (
-          <>
-            <SectionTitle>Персональные рекомендации по обучению</SectionTitle>
-            
-            <LearningRecommendations>
-              <RecommendationSection>
-                <RecommendationTitle>Слабые места</RecommendationTitle>
-                <RecommendationList>
-                  {learningRecommendations.weak_areas?.map((area: string, index: number) => (
-                    <RecommendationItem key={index}>{area}</RecommendationItem>
-                  )) || <RecommendationItem>Данные недоступны</RecommendationItem>}
-                </RecommendationList>
-              </RecommendationSection>
-
-              <RecommendationSection>
-                <RecommendationTitle>Рекомендуемые ресурсы</RecommendationTitle>
-                <RecommendationList>
-                  {learningRecommendations.learning_resources?.map((resource: any, index: number) => (
-                    <RecommendationItem key={index}>
-                      <div>{resource.title}</div>
-                      {resource.url && (
-                        <ResourceLink href={resource.url} target="_blank">
-                          Перейти к ресурсу
-                        </ResourceLink>
-                      )}
-                    </RecommendationItem>
-                  )) || <RecommendationItem>Данные недоступны</RecommendationItem>}
-                </RecommendationList>
-              </RecommendationSection>
-
-              <RecommendationSection>
-                <RecommendationTitle>Практические упражнения</RecommendationTitle>
-                <RecommendationList>
-                  {learningRecommendations.practice_exercises?.map((exercise: string, index: number) => (
-                    <RecommendationItem key={index}>{exercise}</RecommendationItem>
-                  )) || <RecommendationItem>Данные недоступны</RecommendationItem>}
-                </RecommendationList>
-              </RecommendationSection>
-
-              <RecommendationSection>
-                <RecommendationTitle>План обучения на неделю</RecommendationTitle>
-                <RecommendationList>
-                  {learningRecommendations.study_schedule?.map((day: any, index: number) => (
-                    <RecommendationItem key={index}>
-                      <strong>{day.day}:</strong> {day.tasks?.join(', ') || "Нет данных"}
-                    </RecommendationItem>
-                  )) || <RecommendationItem>Данные недоступны</RecommendationItem>}
-                </RecommendationList>
-              </RecommendationSection>
-
-              <RecommendationSection>
-                <RecommendationTitle>Ожидаемые результаты</RecommendationTitle>
-                <RecommendationList>
-                  {learningRecommendations.expected_outcomes?.map((outcome: string, index: number) => (
-                    <RecommendationItem key={index}>{outcome}</RecommendationItem>
-                  )) || <RecommendationItem>Данные недоступны</RecommendationItem>}
-                </RecommendationList>
-              </RecommendationSection>
-            </LearningRecommendations>
-          </>
+        ) : (
+          <NoResults>
+            <h2>Рекомендации не найдены</h2>
+            <p>К сожалению, для данного квиза нет персонализированных рекомендаций.</p>
+          </NoResults>
         )}
       </MainContent>
     </PageContainer>

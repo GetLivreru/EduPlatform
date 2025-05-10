@@ -405,4 +405,31 @@ export const getLearningRecommendations = async (
   }
 
   return response.json();
-}; 
+};
+
+export async function getSavedLearningRecommendations(quizId: string): Promise<any> {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/quiz-attempts/recommendations/${quizId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch learning recommendations');
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching learning recommendations:', error);
+    throw error;
+  }
+} 

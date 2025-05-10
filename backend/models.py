@@ -125,6 +125,57 @@ class LearningPathResponse(LearningPathBase):
         extra='allow'
     )
 
+# Новая модель для хранения рекомендаций
+class LearningResource(BaseModel):
+    title: str
+    url: str
+
+    model_config = ConfigDict(
+        extra='allow'
+    )
+
+class StudyDay(BaseModel):
+    day: str
+    tasks: List[str]
+
+    model_config = ConfigDict(
+        extra='allow'
+    )
+
+class LearningRecommendation(BaseModel):
+    user_id: str
+    quiz_id: str
+    subject: str
+    level: str
+    weak_areas: List[str] = []
+    learning_resources: List[LearningResource] = []
+    practice_exercises: List[str] = []
+    study_schedule: List[StudyDay] = []
+    expected_outcomes: List[str] = []
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    model_config = ConfigDict(
+        extra='allow'
+    )
+
+class LearningRecommendationDB(LearningRecommendation):
+    id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
+    
+    model_config = ConfigDict(
+        populate_by_name=True,
+        arbitrary_types_allowed=True,
+        json_encoders={ObjectId: str},
+        extra='allow'
+    )
+
+class LearningRecommendationResponse(LearningRecommendation):
+    id: str
+    
+    model_config = ConfigDict(
+        from_attributes=True,
+        extra='allow'
+    )
+
 class User(BaseModel):
     name: str
     login: EmailStr

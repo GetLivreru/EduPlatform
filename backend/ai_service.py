@@ -2,16 +2,43 @@ import os
 from openai import OpenAI
 from typing import List, Dict
 import json
+import logging
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# Настройка логгирования
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Инициализация клиента OpenAI
+api_key = os.getenv("OPENAI_API_KEY")
+client = OpenAI(api_key=api_key) if api_key else None
 
 async def generate_learning_recommendations(subject: str, level: str, quiz_results: Dict, incorrect_questions: List[Dict]) -> Dict:
+    """
+    Генерирует персонализированные рекомендации по обучению на основе результатов квиза.
+    
+    Args:
+        subject: Предмет обучения (категория)
+        level: Уровень сложности
+        quiz_results: Результаты квиза (общая оценка)
+        incorrect_questions: Список неправильно отвеченных вопросов
+        
+    Returns:
+        Dict: Структурированные рекомендации по обучению
+    """
+    # Проверка наличия API ключа
+    if not client:
+        logger.error("OpenAI API key not found")
+        return generate_fallback_recommendations(subject, level)
+    
+    # Проверка входных данных
+    score = quiz_results.get('score', 0)
+    
     prompt = f"""
     Generate personalized learning recommendations for {subject} at {level} level.
     
     Quiz Results:
-    - Overall Score: {quiz_results.get('score', 0)}%
-    - Incorrect Questions: {json.dumps(incorrect_questions)}
+    - Overall Score: {score}%
+    - Incorrect Questions: {json.dumps(incorrect_questions, ensure_ascii=False)}
     
     Please provide recommendations in valid JSON format with the following structure:
     {{
@@ -33,7 +60,7 @@ async def generate_learning_recommendations(subject: str, level: str, quiz_resul
     """
     
     try:
-        print(f"Sending request to OpenAI for subject: {subject}, level: {level}")
+        logger.info(f"Sending request to OpenAI for subject: {subject}, level: {level}")
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
@@ -46,7 +73,7 @@ async def generate_learning_recommendations(subject: str, level: str, quiz_resul
         )
         
         content = response.choices[0].message.content
-        print(f"Response received from OpenAI: {content[:50]}...")
+        logger.info(f"Response received from OpenAI: {content[:50]}...")
         
         # Удаляем возможные маркеры Markdown, если они все-таки появляются
         if content.startswith("```"):
@@ -69,8 +96,8 @@ async def generate_learning_recommendations(subject: str, level: str, quiz_resul
                 "expected_outcomes": parsed_content.get("expected_outcomes", [])
             }
         except json.JSONDecodeError as json_err:
-            print(f"Failed to parse OpenAI response as JSON: {str(json_err)}")
-            print(f"Raw response: {content}")
+            logger.error(f"Failed to parse OpenAI response as JSON: {str(json_err)}")
+            logger.debug(f"Raw response: {content}")
             
             # Пытаемся извлечь JSON даже с ошибками форматирования
             # Чистим ответ от маркдаун форматирования если он всё ещё есть
@@ -89,21 +116,51 @@ async def generate_learning_recommendations(subject: str, level: str, quiz_resul
                         "study_schedule": parsed_content.get("study_schedule", []),
                         "expected_outcomes": parsed_content.get("expected_outcomes", [])
                     }
-                except:
-                    pass
+                except Exception as e:
+                    logger.error(f"Failed to extract JSON with regex: {str(e)}")
                     
             # Если всё равно не получилось, возвращаем базовый шаблон
-            return {
-                "subject": subject,
-                "level": level,
-                "weak_areas": ["Parsing error - Unable to extract JSON from response"],
-                "learning_resources": [{"title": "Default resource", "url": "https://www.coursera.org/"}],
-                "practice_exercises": ["Default exercise"],
-                "study_schedule": [{"day": "Day 1", "tasks": ["Default task"]}],
-                "expected_outcomes": ["Default outcome"]
-            }
+            return generate_fallback_recommendations(subject, level)
     except Exception as e:
-        print(f"Error generating learning recommendations: {str(e)}")
-        return None
+        logger.error(f"Error generating learning recommendations: {str(e)}")
+        return generate_fallback_recommendations(subject, level)
+
+def generate_fallback_recommendations(subject: str, level: str) -> Dict:
+    """
+    Генерирует базовые рекомендации, когда API недоступен или произошла ошибка.
+    
+    Args:
+        subject: Предмет обучения
+        level: Уровень сложности
+        
+    Returns:
+        Dict: Базовые рекомендации по обучению
+    """
+    return {
+        "subject": subject,
+        "level": level,
+        "weak_areas": ["Общие темы в " + subject],
+        "learning_resources": [
+            {"title": f"Основы {subject}", "url": "https://www.coursera.org/"},
+            {"title": f"Учебник по {subject}", "url": "https://www.edx.org/"}
+        ],
+        "practice_exercises": [
+            f"Изучить базовые концепции {subject}",
+            f"Выполнить упражнения начального уровня",
+            f"Ознакомиться с ключевыми темами"
+        ],
+        "study_schedule": [
+            {"day": "День 1", "tasks": [f"Ознакомление с предметом {subject}"]},
+            {"day": "День 2", "tasks": [f"Изучение основных понятий {subject}"]},
+            {"day": "День 3", "tasks": ["Решение простых задач"]},
+            {"day": "День 4", "tasks": ["Закрепление материала"]},
+            {"day": "День 5", "tasks": ["Практические упражнения", "Повторение изученного"]}
+        ],
+        "expected_outcomes": [
+            f"Базовое понимание {subject}",
+            "Способность решать простые задачи",
+            "Подготовка к более сложным темам"
+        ]
+    }
 
 __all__ = ['generate_learning_recommendations'] 
