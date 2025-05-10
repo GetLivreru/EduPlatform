@@ -94,19 +94,19 @@ const QuizList: React.FC<QuizListProps> = ({ selectedSubject, selectedDifficulty
         <div className="w-full">
             {loading && (
                 <div className="flex justify-center items-center h-64">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 dark:border-blue-400"></div>
                 </div>
             )}
 
             {error && (
-                <div className="flex items-center justify-center p-4 text-red-500">
+                <div className="flex items-center justify-center p-4 text-red-500 dark:text-red-400">
                     <FaExclamationCircle className="mr-2" />
                     <span>{error}</span>
                 </div>
             )}
 
             {!loading && !error && filteredQuizzes.length === 0 && (
-                <div className="text-center text-gray-500 mt-8">
+                <div className="text-center text-gray-500 dark:text-gray-400 mt-8">
                     Квизы не найдены для выбранных фильтров
                 </div>
             )}
@@ -116,33 +116,33 @@ const QuizList: React.FC<QuizListProps> = ({ selectedSubject, selectedDifficulty
                     {filteredQuizzes.map((quiz) => (
                         <div
                             key={quiz.id || quiz._id}
-                            className="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden"
+                            className="bg-white dark:bg-gray-800 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden"
                         >
                             <div className="p-6">
-                                <h3 className="text-xl font-bold mb-3 text-gray-800">{quiz.title}</h3>
-                                <div className="flex items-center mb-2 text-gray-600">
+                                <h3 className="text-xl font-bold mb-3 text-gray-800 dark:text-white">{quiz.title}</h3>
+                                <div className="flex items-center mb-2 text-gray-600 dark:text-gray-300">
                                     <FaBook className="mr-2" />
                                     <span>{quiz.category}</span>
                                 </div>
-                                <div className="flex items-center mb-2 text-gray-600">
+                                <div className="flex items-center mb-2 text-gray-600 dark:text-gray-300">
                                     <FaQuestion className="mr-2" />
                                     <span>{quiz.questions.length} вопросов</span>
                                 </div>
-                                <div className="flex items-center mb-4 text-gray-600">
+                                <div className="flex items-center mb-4 text-gray-600 dark:text-gray-300">
                                     <FaClock className="mr-2" />
                                     <span>{quiz.time_limit} минут</span>
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <span className={`px-3 py-1 rounded-full text-sm font-semibold
-                                        ${quiz.difficulty?.toLowerCase() === 'easy' ? 'bg-green-100 text-green-800' :
-                                        quiz.difficulty?.toLowerCase() === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                                        'bg-red-100 text-red-800'}`}>
+                                        ${quiz.difficulty?.toLowerCase() === 'easy' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+                                        quiz.difficulty?.toLowerCase() === 'medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
+                                        'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'}`}>
                                         {quiz.difficulty?.toLowerCase() === 'easy' ? 'Легкий' :
                                          quiz.difficulty?.toLowerCase() === 'medium' ? 'Средний' : 'Сложный'}
                                     </span>
                                     <button
                                         onClick={() => handleStartQuiz(quiz.id || quiz._id)}
-                                        className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-300"
+                                        className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 dark:hover:from-blue-500 dark:hover:to-blue-600 transition-all duration-300"
                                     >
                                         <FaPlay className="mr-2" />
                                         Начать
@@ -157,31 +157,31 @@ const QuizList: React.FC<QuizListProps> = ({ selectedSubject, selectedDifficulty
             {/* Модальное окно авторизации */}
             {showAuthModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 max-w-md w-full">
                         <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-xl font-semibold text-gray-900">Требуется авторизация</h3>
+                            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Требуется авторизация</h3>
                             <button 
                                 onClick={() => setShowAuthModal(false)}
-                                className="text-gray-500 hover:text-gray-700"
+                                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                             >
                                 <FaTimes size={20} />
                             </button>
                         </div>
                         <div className="mb-4">
-                            <p className="text-gray-700 mb-4">
+                            <p className="text-gray-700 dark:text-gray-300 mb-4">
                                 Для прохождения теста необходимо войти в систему или зарегистрироваться.
                             </p>
                             <div className="flex flex-col sm:flex-row gap-4 justify-center">
                                 <button
                                     onClick={handleLogin}
-                                    className="flex items-center justify-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                                    className="flex items-center justify-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 transition-colors"
                                 >
                                     <FaSignInAlt className="mr-2" />
                                     Войти
                                 </button>
                                 <button
                                     onClick={handleRegister}
-                                    className="flex items-center justify-center px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                                    className="flex items-center justify-center px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700 transition-colors"
                                 >
                                     <FaUserPlus className="mr-2" />
                                     Регистрация
