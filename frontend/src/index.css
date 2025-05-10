@@ -1,3 +1,23 @@
 @tailwind base;
 @tailwind components;
-@tailwind utilities; 
+@tailwind utilities;
+
+body {
+  transition: background-color 0.3s, color 0.3s;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+.dark * {
+  transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+}
+
+.dark ::-webkit-scrollbar {
+  background-color: #1f2937;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background-color: #374151;
+} 

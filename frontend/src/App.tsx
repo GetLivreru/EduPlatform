@@ -10,10 +10,11 @@ import AdminPanel from './components/admin/AdminPanel';
 import QuizResults from './components/QuizResults';
 import QuizResultPage from './components/QuizResultPage';
 import MyLearning from './components/MyLearning';
-import { FaFilter } from 'react-icons/fa';
+import { FaFilter, FaMoon, FaSun } from 'react-icons/fa';
 import Quiz from './components/Quiz';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import LearningRecommendations from './pages/LearningRecommendations';
+import { useTheme } from './context/ThemeContext';
 
 // Компонент для проверки прав администратора
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -66,6 +67,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [welcomeMessage, setWelcomeMessage] = useState<string>('');
     const { user, logout } = useAuth();
     const [isAdmin, setIsAdmin] = useState<boolean>(false);
+    const { theme, toggleTheme } = useTheme();
 
     useEffect(() => {
         const checkConnection = async () => {
@@ -107,16 +109,16 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
-            <header className="bg-white shadow-sm">
+        <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 dark:text-white">
+            <header className="bg-white shadow-sm dark:bg-gray-900">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                     <div className="flex justify-between items-center">
                         <div>
-                            <Link to="/" className="text-2xl font-bold text-gray-900 hover:text-gray-700">
+                            <Link to="/" className="text-2xl font-bold text-gray-900 dark:text-white hover:text-gray-700 dark:hover:text-gray-300">
                                 {welcomeMessage}
                             </Link>
-                            <p className="text-sm text-gray-500">
-                                Статус сервера: <span className={`font-semibold ${backendStatus === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                Статус сервера: <span className={`font-semibold ${backendStatus === 'success' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                                     {backendStatus === 'success' ? 'Подключен' : 'Ошибка подключения'}
                                 </span>
                             </p>
@@ -156,6 +158,14 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                                     >
                                         Выйти
                                     </button>
+                                    <button 
+                                        onClick={toggleTheme}
+                                        className="flex items-center px-3 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors ml-4"
+                                        title={theme === 'light' ? 'Включить тёмную тему' : 'Включить светлую тему'}
+                                    >
+                                        {theme === 'light' ? <FaMoon className="mr-2" /> : <FaSun className="mr-2" />}
+                                        {theme === 'light' ? 'Тёмная тема' : 'Светлая тема'}
+                                    </button>
                                 </>
                             ) : (
                                 <>
@@ -182,9 +192,9 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 {children}
             </main>
 
-            <footer className="bg-white border-t border-gray-200">
+            <footer className="bg-white border-t border-gray-200 dark:bg-gray-900 dark:border-gray-700">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                    <p className="text-center text-gray-500 text-sm">
+                    <p className="text-center text-gray-500 dark:text-gray-400 text-sm">
                         © 2024 Платформа образовательных тестов. Все права защищены.
                     </p>
                 </div>
@@ -199,12 +209,12 @@ const HomePage: React.FC = () => {
 
     return (
         <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Доступные тесты</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Доступные тесты</h2>
             <div className="flex flex-wrap gap-4 mb-6">
                 <div className="flex items-center">
-                    <FaFilter className="text-gray-500 mr-2" />
+                    <FaFilter className="text-gray-500 dark:text-gray-400 mr-2" />
                     <select
-                        className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
                         value={selectedSubject}
                         onChange={(e) => setSelectedSubject(e.target.value)}
                     >
@@ -218,9 +228,9 @@ const HomePage: React.FC = () => {
                 </div>
                 
                 <div className="flex items-center">
-                    <FaFilter className="text-gray-500 mr-2" />
+                    <FaFilter className="text-gray-500 dark:text-gray-400 mr-2" />
                     <select
-                        className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
                         value={selectedDifficulty}
                         onChange={(e) => setSelectedDifficulty(e.target.value)}
                     >

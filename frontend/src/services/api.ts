@@ -66,6 +66,7 @@ export interface Quiz {
     passing_score: number;
     created_at: string;
     updated_at: string;
+    difficulty: string;
 }
 
 export interface User {
