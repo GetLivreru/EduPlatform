@@ -209,8 +209,11 @@ const HomePage: React.FC = () => {
                         onChange={(e) => setSelectedSubject(e.target.value)}
                     >
                         <option value="all">Все предметы</option>
-                        <option value="C++">C++</option>
-                        <option value="ICT">ICT</option>
+                        <option value="ICT">Информатика</option>
+                        <option value="Mathematics">Математика</option>
+                        <option value="English">Английский язык</option>
+                        <option value="History">История</option>
+                        <option value="Программирование">Программирование</option>
                     </select>
                 </div>
                 
