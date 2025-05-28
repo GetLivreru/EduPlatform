@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+/*import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getUserQuizResults, getQuiz, getQuizResult, QuizResult, Quiz, getLearningRecommendations } from '../services/api';
+import { getUserQuizResults, getQuiz, getLearningRecommendations } from '../services/api';
 import styled from 'styled-components';
 import { useAuth } from '../context/AuthContext';
-
+import type { QuizResult, Quiz } from '../services/api';
 const PageContainer = styled.div`
   display: flex;
   min-height: calc(100vh - 100px);
@@ -93,24 +93,6 @@ const LoadingMessage = styled.div`
   color: #666;
 `;
 
-// Result detail components
-const ResultHeader = styled.div`
-  margin-bottom: 20px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #e0e0e0;
-`;
-
-const ResultDetailTitle = styled.h2`
-  font-size: 24px;
-  margin-bottom: 10px;
-  color: #333;
-`;
-
-const ResultDescription = styled.p`
-  color: #666;
-  margin-bottom: 15px;
-`;
-
 const ScoreCircle = styled.div<{ score: number }>`
   width: 120px;
   height: 120px;
@@ -140,38 +122,6 @@ const ScoreValue = styled.div<{ score: number }>`
     if (props.score >= 60) return '#e65100';
     return '#c62828';
   }};
-`;
-
-const ScoreLabel = styled.div`
-  font-size: 14px;
-  color: #666;
-`;
-
-const ResultDetails = styled.div`
-  margin: 20px 0;
-  background-color: #f5f5f5;
-  padding: 15px;
-  border-radius: 8px;
-`;
-
-const DetailItem = styled.div`
-  display: flex;
-  justify-content: space-between;
-  padding: 10px 0;
-  border-bottom: 1px solid #e0e0e0;
-  
-  &:last-child {
-    border-bottom: none;
-  }
-`;
-
-const DetailLabel = styled.span`
-  color: #666;
-`;
-
-const DetailValue = styled.span`
-  font-weight: 500;
-  color: #333;
 `;
 
 const SectionTitle = styled.h3`
@@ -211,12 +161,6 @@ const LearningResourceLink = styled.a`
   &:hover {
     text-decoration: underline;
   }
-`;
-
-const ButtonGroup = styled.div`
-  margin-top: 30px;
-  display: flex;
-  gap: 15px;
 `;
 
 const Button = styled(Link)`
@@ -341,11 +285,11 @@ const QuizResults: React.FC = () => {
       { day: 'Вс', tasks: ['Отдых'], done: false },
     ];
   };
-  const getAchievements = (quiz: Quiz | null) => [
+  const getAchievements = () => [
     { icon: '✅', label: 'Пройдено 5 квизов' },
     { icon: '🧠', label: 'Изучено 3 темы' },
   ];
-  const getProgress = (quiz: Quiz | null) => 54;
+  const getProgress = () => 54;
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -402,77 +346,12 @@ const QuizResults: React.FC = () => {
     }).format(date);
   };
 
-  const getScoreMessage = (score: number) => {
-    if (score >= 90) return 'Отлично!';
-    if (score >= 70) return 'Хороший результат!';
-    if (score >= 50) return 'Неплохо!';
-    return 'Старайтесь!';
-  };
-
-  // Mock learning materials based on the quiz category
-  const getLearningMaterials = (category?: string) => {
-    if (!category) return [];
-
-    switch (category.toLowerCase()) {
-      case 'programming':
-      case 'программирование':
-        return [
-          {
-            topic: 'Основы программирования',
-            description: 'Изучите базовые концепции программирования, включая переменные, типы данных и управляющие структуры.',
-            link: 'https://learn.javascript.ru/'
-          },
-          {
-            topic: 'Алгоритмы и структуры данных',
-            description: 'Познакомьтесь с основными алгоритмами и структурами данных, используемыми в программировании.',
-            link: 'https://visualgo.net/'
-          }
-        ];
-      case 'math':
-      case 'математика':
-        return [
-          {
-            topic: 'Алгебра и геометрия',
-            description: 'Укрепите свои знания в алгебре и геометрии с помощью интерактивных упражнений.',
-            link: 'https://www.khanacademy.org/math'
-          },
-          {
-            topic: 'Математический анализ',
-            description: 'Изучите основы дифференциального и интегрального исчисления.',
-            link: 'https://www.coursera.org/learn/calculus1'
-          }
-        ];
-      case 'history':
-      case 'история':
-        return [
-          {
-            topic: 'История Казахстана',
-            description: 'Узнайте больше о ключевых событиях и личностях в истории Казахстана.',
-            link: 'https://e-history.kz/ru/'
-          },
-          {
-            topic: 'Мировая история',
-            description: 'Изучите важнейшие исторические события, изменившие ход мировой истории.',
-            link: 'https://www.history.com/'
-          }
-        ];
-      default:
-        return [
-          {
-            topic: 'Дополнительные материалы',
-            description: 'Расширьте свои знания с помощью этих дополнительных ресурсов.',
-            link: 'https://www.coursera.org/'
-          }
-        ];
-    }
-  };
-
   if (loading) return <LoadingMessage>Загрузка...</LoadingMessage>;
   if (error) return <div>{error}</div>;
 
   return (
     <PageContainer>
-      {/* Sidebar — список всех результатов */}
+      {/* Sidebar — список всех результатов 
       <Sidebar>
         <PageTitle>Моё обучение</PageTitle>
         {results.length === 0 ? (
@@ -499,14 +378,12 @@ const QuizResults: React.FC = () => {
           ))
         )}
       </Sidebar>
-      {/* Правая часть — индивидуальный путь обучения для выбранного результата */}
       <MainContent>
         <div style={{ fontSize: 20, marginBottom: 24 }}>
           Привет, {user?.name || 'друг'}! Вот твой персональный план.
         </div>
         {selectedResult && quizDetails && (
           <>
-            {/* 2. Результаты выбранного квиза */}
             <div style={{ background: '#fff', borderRadius: 10, boxShadow: '0 2px 8px #0001', padding: 24, marginBottom: 32 }}>
               <div style={{ fontSize: 18, fontWeight: 500, marginBottom: 8 }}>
                 Квиз: {quizDetails.title}
@@ -525,7 +402,6 @@ const QuizResults: React.FC = () => {
                 </div>
               </div>
             </div>
-            {/* 3. Индивидуальный учебный план */}
             <SectionTitle>Учебный план на неделю</SectionTitle>
             <div style={{ display: 'flex', gap: 12, marginBottom: 32 }}>
               {getWeekPlan(quizDetails).map((d, i) => (
@@ -540,7 +416,6 @@ const QuizResults: React.FC = () => {
               <div style={{ width: getProgress(quizDetails) + '%', background: '#3f51b5', height: '100%' }}></div>
             </div>
             <div style={{ marginBottom: 32, color: '#666' }}>Прогресс учебного плана: <b>{getProgress(quizDetails)}%</b></div>
-            {/* 4. Рекомендованные материалы */}
             <SectionTitle>Тебе стоит изучить</SectionTitle>
             <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 32 }}>
               <LearningMaterial>
@@ -559,13 +434,13 @@ const QuizResults: React.FC = () => {
                 <LearningResourceLink href="https://ru.khanacademy.org/math/algebra/one-variable-linear-equations" target="_blank">Перейти</LearningResourceLink>
               </LearningMaterial>
             </div>
-            {/* 5. Генерация контента ИИ */}
+             5. Генерация контента ИИ 
             <SectionTitle>Сгенерировать шпаргалку</SectionTitle>
             <div style={{ marginBottom: 16 }}>
               Быстрая шпаргалка по темам: <b>{getWeakTopics(quizDetails).join(', ')}</b>
             </div>
             <PrimaryButton to="#">Создать новый квиз по моим ошибкам</PrimaryButton>
-            {/* 6. Прогресс и достижения */}
+            {/* 6. Прогресс и достижения 
             <SectionTitle>Достижения</SectionTitle>
             <div style={{ display: 'flex', gap: 16, marginBottom: 32 }}>
               {getAchievements(quizDetails).map((a, i) => (
@@ -647,4 +522,4 @@ const QuizResults: React.FC = () => {
   );
 };
 
-export default QuizResults; 
+export default QuizResults; */

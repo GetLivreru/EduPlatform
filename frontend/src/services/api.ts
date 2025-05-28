@@ -42,7 +42,7 @@ export const getWelcomeMessage = async (): Promise<string> => {
 
 // Quiz related interfaces
 export interface Question {
-    id: string;
+    id?: string;
     text: string;
     options: string[];
     correct_answer: number;
@@ -56,17 +56,18 @@ export interface QuizQuestion {
 }
 
 export interface Quiz {
-    id: string;
+    _id?: string;
+    id?: string;
     title: string;
     description: string;
     category: string;
-    level: string;
+    level?: string;
     questions: Question[];
-    time_limit: number;
-    passing_score: number;
-    created_at: string;
-    updated_at: string;
-    difficulty: string;
+    time_limit?: number;
+    passing_score?: number;
+    created_at?: string;
+    updated_at?: string;
+    difficulty?: string;
 }
 
 export interface User {

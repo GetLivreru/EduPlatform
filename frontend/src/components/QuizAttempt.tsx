@@ -38,7 +38,7 @@ const QuizAttempt: React.FC = () => {
                 }
                 
                 setQuiz(quizData);
-                setTimeLeft(quizData.time_limit * 60); // Convert minutes to seconds
+                setTimeLeft(((quizData.time_limit ?? 30) * 60)); // Значение по умолчанию 30 минут
                 
                 // Start quiz attempt
                 console.log('Начинаем попытку для квиза с ID:', quizId);
@@ -50,7 +50,7 @@ const QuizAttempt: React.FC = () => {
                 }
                 
                 console.log('Создана попытка квиза с ID:', attempt._id);
-                setAttemptId(attempt._id);
+                setAttemptId(attempt._id ?? attempt.id ?? null);
                 setLoading(false);
             } catch (err) {
                 console.error('Error loading quiz:', err);

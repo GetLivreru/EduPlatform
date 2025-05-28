@@ -32,12 +32,12 @@ const QuizManager: React.FC = () => {
                 const quizData = await getAdminQuiz(quizId);
                 
                 setFormData({
-                    title: quizData.title,
-                    description: quizData.description,
-                    category: quizData.category,
-                    difficulty: quizData.difficulty,
-                    time_limit: quizData.time_limit,
-                    questions: quizData.questions.map((q: any) => ({
+                    title: quizData.title ?? '',
+                    description: quizData.description ?? '',
+                    category: quizData.category ?? '',
+                    difficulty: quizData.difficulty ?? 'Easy',
+                    time_limit: quizData.time_limit ?? 30,
+                    questions: (quizData.questions ?? []).map((q: any) => ({
                         text: q.text,
                         options: q.options,
                         correct_answer: q.correct_answer

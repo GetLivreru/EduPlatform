@@ -264,20 +264,22 @@ const AdminPanel: React.FC = () => {
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <button
-                                            onClick={() => handleViewQuiz(quiz)}
+                                            onClick={() => quiz._id && handleViewQuiz(quiz)}
                                             className="text-gray-600 hover:text-gray-900 mr-4"
                                         >
                                             <FaEye />
                                         </button>
                                         <button
-                                            onClick={() => handleEditQuiz(quiz._id)}
+                                            onClick={() => quiz._id && handleEditQuiz(quiz._id)}
                                             className="text-blue-600 hover:text-blue-900 mr-4"
+                                            disabled={!quiz._id}
                                         >
                                             <FaEdit />
                                         </button>
                                         <button
-                                            onClick={() => handleDeleteQuiz(quiz._id)}
+                                            onClick={() => quiz._id && handleDeleteQuiz(quiz._id)}
                                             className="text-red-600 hover:text-red-900"
+                                            disabled={!quiz._id}
                                         >
                                             <FaTrash />
                                         </button>
@@ -366,9 +368,10 @@ const AdminPanel: React.FC = () => {
                             <button
                                 onClick={() => {
                                     closeQuizModal();
-                                    handleEditQuiz(selectedQuiz._id);
+                                    selectedQuiz._id && handleEditQuiz(selectedQuiz._id);
                                 }}
                                 className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mr-2"
+                                disabled={!selectedQuiz._id}
                             >
                                 Редактировать
                             </button>

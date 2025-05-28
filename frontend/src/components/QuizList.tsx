@@ -14,7 +14,6 @@ const QuizList: React.FC<QuizListProps> = ({ selectedSubject, selectedDifficulty
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [showAuthModal, setShowAuthModal] = useState(false);
-    const [selectedQuizId, setSelectedQuizId] = useState<string | null>(null);
     const navigate = useNavigate();
     const { user } = useAuth();
 
@@ -58,20 +57,15 @@ const QuizList: React.FC<QuizListProps> = ({ selectedSubject, selectedDifficulty
         fetchQuizzes();
     }, []);
 
-    const handleStartQuiz = (quizId: string) => {
-        if (!quizId || quizId === 'undefined') {
+    const handleStartQuiz = (quizId: string | undefined) => {
+        if (!quizId) {
             console.error('Попытка начать квиз с недопустимым ID:', quizId);
             setError('Ошибка: невозможно начать квиз с указанным ID');
             return;
         }
-        
-        console.log('Начинаем квиз с ID:', quizId);
-        
         if (user) {
             navigate(`/quiz/${quizId}`);
         } else {
-            // Для незарегистрированных пользователей показываем модальное окно
-            setSelectedQuizId(quizId);
             setShowAuthModal(true);
         }
     };
@@ -141,7 +135,7 @@ const QuizList: React.FC<QuizListProps> = ({ selectedSubject, selectedDifficulty
                                          quiz.difficulty?.toLowerCase() === 'medium' ? 'Средний' : 'Сложный'}
                                     </span>
                                     <button
-                                        onClick={() => handleStartQuiz(quiz.id || quiz._id)}
+                                        onClick={() => handleStartQuiz(quiz.id ?? quiz._id)}
                                         className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 dark:hover:from-blue-500 dark:hover:to-blue-600 transition-all duration-300"
                                     >
                                         <FaPlay className="mr-2" />

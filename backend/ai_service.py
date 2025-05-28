@@ -44,8 +44,8 @@ async def generate_learning_recommendations(subject: str, level: str, quiz_resul
     {{
         "weak_areas": ["area1", "area2"],
         "learning_resources": [
-            {{"title": "Resource 1", "url": "http://example.com"}},
-            {{"title": "Resource 2", "url": "http://example2.com"}}
+            {{"title": "Resource 1", "url": "http://coursera.com"}},
+            {{"title": "Resource 2", "url": "http://udemy.com"}}
         ],
         "practice_exercises": ["exercise1", "exercise2"],
         "study_schedule": [

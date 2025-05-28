@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { getQuiz, getAttempt, getQuizResult, Quiz, QuizAttempt, QuizResult } from '../services/api';
+import { useParams, Link } from 'react-router-dom';
+import { getQuiz, getAttempt, Quiz, QuizAttempt } from '../services/api';
 import styled from 'styled-components';
 
 const ResultContainer = styled.div`
@@ -153,7 +153,6 @@ interface QuizResultPageProps {
 const QuizResultPage: React.FC<QuizResultPageProps> = ({ attemptId: propAttemptId }) => {
   const params = useParams<{ attemptId: string }>();
   const attemptId = propAttemptId || params.attemptId;
-  const navigate = useNavigate();
   
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [attempt, setAttempt] = useState<QuizAttempt | null>(null);

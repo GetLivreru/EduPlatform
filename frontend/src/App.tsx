@@ -7,7 +7,6 @@ import Register from './components/auth/Register';
 import QuizAttempt from './components/QuizAttempt';
 import QuizManager from './components/admin/QuizManager';
 import AdminPanel from './components/admin/AdminPanel';
-import QuizResults from './components/QuizResults';
 import QuizResultPage from './components/QuizResultPage';
 import MyLearning from './components/MyLearning';
 import { FaFilter, FaMoon, FaSun } from 'react-icons/fa';
@@ -256,7 +255,7 @@ const App: React.FC = () => {
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Register />} />
                         <Route path="/quiz/:quizId" element={<QuizAttempt />} />
-                        <Route path="/quiz-results" element={<QuizResults />} />
+                        {/*<Route path="/quiz-results" element={<QuizResults />} />*/}
                         <Route path="/my-learning" element={<MyLearning />} />
                         <Route path="/quiz-result/:attemptId" element={<QuizResultPage />} />
                         <Route

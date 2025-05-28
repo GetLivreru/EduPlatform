@@ -21,9 +21,9 @@ const Quiz: React.FC = () => {
                 if (!id) return;
                 const quizData = await getQuiz(id);
                 setQuiz(quizData);
-                setTimeLeft(quizData.time_limit * 60); // Convert minutes to seconds
+                setTimeLeft(((quizData.time_limit ?? 30) * 60)); // Значение по умолчанию 30 минут
                 const attempt = await startQuiz(id);
-                setAttemptId(attempt.id);
+                setAttemptId(attempt.id ?? attempt._id ?? null);
                 setLoading(false);
             } catch (err) {
                 setError('Failed to load quiz');

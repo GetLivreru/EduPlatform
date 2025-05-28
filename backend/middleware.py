@@ -35,14 +35,13 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 async def get_current_user(request: Request) -> UserInDB:
     try:
         credentials: HTTPAuthorizationCredentials = await security(request)
-        if not credentials:
-            raise HTTPException(status_code=401, detail="Не авторизован")
-        
         token = credentials.credentials
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("sub")
         if user_id is None:
             raise HTTPException(status_code=401, detail="Неверный токен")
+    except jwt.DecodeError:
+        raise HTTPException(status_code=401, detail="Неверный токен")
     except Exception:
         raise HTTPException(status_code=401, detail="Не авторизован")
     
