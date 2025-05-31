@@ -189,7 +189,6 @@ class User(BaseModel):
     name: str
     login: EmailStr
     password: str
-    is_admin: bool = False
     quiz_points: int = 0
     created_at: datetime = Field(default_factory=datetime.now)
     role: UserRole = UserRole.student
@@ -212,12 +211,11 @@ class UserCreate(BaseModel):
     name: str
     login: EmailStr
     password: str
-    is_admin: bool = False
+    role: UserRole = UserRole.student
 
     model_config = ConfigDict(
         extra='allow'
     )
-    role: UserRole = UserRole.student
 class UserLogin(BaseModel):
     login: EmailStr
     password: str
@@ -230,7 +228,6 @@ class UserResponse(BaseModel):
     id: str
     name: str
     login: EmailStr
-    is_admin: bool
     quiz_points: int
     created_at: datetime
     role: UserRole

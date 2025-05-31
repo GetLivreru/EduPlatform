@@ -28,6 +28,7 @@ async def register(user: UserCreate):
     user_dict = user.model_dump()
     user_dict["password"] = hashed_password
     user_dict["created_at"] = datetime.now()
+    user_dict["role"] = user.role
     
     # Сохраняем пользователя
     result = await users_collection.insert_one(user_dict)
@@ -52,7 +53,7 @@ async def login(user: UserLogin):
     # Создаем токен
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": str(db_user["_id"])},
+        data={"sub": str(db_user["_id"]),"role":db_user["role"]},
         expires_delta=access_token_expires
     )
     
@@ -63,7 +64,7 @@ async def login(user: UserLogin):
             "id": str(db_user["_id"]),
             "name": db_user["name"],
             "login": db_user["login"],
-            "is_admin": db_user["is_admin"]
+            "role":db_user["role"]
         }
     }
 
@@ -72,5 +73,5 @@ async def login(user: UserLogin):
         description="Проверяет, имеет ли текущий пользователь права администратора")
 async def check_admin(current_user: UserInDB = Depends(get_current_user)):
     return {
-        "is_admin": current_user.is_admin
+        "role":current_user.role
     } 
