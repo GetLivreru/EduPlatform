@@ -2,6 +2,9 @@ from typing import List, Optional, Any
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from bson import ObjectId
 from datetime import datetime
+from enum import Enum
+
+
 
 class PyObjectId(str):
     @classmethod
@@ -176,6 +179,12 @@ class LearningRecommendationResponse(LearningRecommendation):
         extra='allow'
     )
 
+class UserRole(str, Enum):
+    student = "student"
+    teacher = "teacher"
+    admin = "admin"
+
+
 class User(BaseModel):
     name: str
     login: EmailStr
@@ -183,6 +192,7 @@ class User(BaseModel):
     is_admin: bool = False
     quiz_points: int = 0
     created_at: datetime = Field(default_factory=datetime.now)
+    role: UserRole = UserRole.student
 
     model_config = ConfigDict(
         extra='allow'
@@ -190,7 +200,7 @@ class User(BaseModel):
 
 class UserInDB(User):
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
-    
+    role: UserRole = UserRole.student
     model_config = ConfigDict(
         populate_by_name=True,
         arbitrary_types_allowed=True,
@@ -207,7 +217,7 @@ class UserCreate(BaseModel):
     model_config = ConfigDict(
         extra='allow'
     )
-
+    role: UserRole = UserRole.student
 class UserLogin(BaseModel):
     login: EmailStr
     password: str
@@ -223,6 +233,7 @@ class UserResponse(BaseModel):
     is_admin: bool
     quiz_points: int
     created_at: datetime
+    role: UserRole
 
     model_config = ConfigDict(
         from_attributes=True,
