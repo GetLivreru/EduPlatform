@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from datetime import timedelta
 from passlib.context import CryptContext
 from app.core.config import settings
-from app.models.user import UserCreate, UserLogin, UserResponse, UserInDB
+from app.models.user import UserCreate, UserLogin, UserResponse, UserInDB, UserRole
 from app.core.auth import create_access_token, get_current_user
 from app.db.mongodb import get_collection
 from datetime import datetime
@@ -28,9 +28,9 @@ async def register(user: UserCreate):
     user_dict = user.model_dump()
     user_dict["password"] = hashed_password
     user_dict["created_at"] = datetime.now()
-    user_dict["role"] = user.role
+    user_dict["role"] = UserRole.student
     
-    # Сохраняем пользователя
+        # Сохраняем пользователя
     result = await users_collection.insert_one(user_dict)
     created_user = await users_collection.find_one({"_id": result.inserted_id})
     
@@ -68,10 +68,35 @@ async def login(user: UserLogin):
         }
     }
 
-@router.get("/check-admin",
-        summary="Проверка прав администратора",
-        description="Проверяет, имеет ли текущий пользователь права администратора")
+@router.get("/check-admin")
 async def check_admin(current_user: UserInDB = Depends(get_current_user)):
     return {
         "role":current_user.role
     } 
+@router.get("/register-teacher",response_model=UserResponse)
+async def register_teacher(
+    user:UserCreate,
+    current_user:UserInDB = Depends(get_current_user)
+    ):
+    if current_user.role != UserRole.admin:
+        raise HTTPException(status_code=403, detail="У вас нет прав для регистрации преподавателей")
+    
+    users_collection = get_collection("users")
+    existing_user = await users_collection.find_one({"login": user.login})
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Пользователь с таким email уже существует")
+    
+    hashed_password = pwd_context.hash(user.password)
+    user_dict = user.model_dump()
+    user_dict["password"] = hashed_password
+    user_dict["created_at"] = datetime.now()
+    user_dict["role"] = UserRole.teacher
+    
+    result = await users_collection.insert_one(user_dict)
+    created_user = await users_collection.find_one({"_id": result.inserted_id})
+
+    created_user["id"] = str(created_user["_id"])
+    del created_user["_id"]
+    
+    return UserResponse(**created_user)
+    

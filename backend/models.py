@@ -199,7 +199,6 @@ class User(BaseModel):
 
 class UserInDB(User):
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
-    role: UserRole = UserRole.student
     model_config = ConfigDict(
         populate_by_name=True,
         arbitrary_types_allowed=True,
@@ -216,6 +215,7 @@ class UserCreate(BaseModel):
     model_config = ConfigDict(
         extra='allow'
     )
+
 class UserLogin(BaseModel):
     login: EmailStr
     password: str
