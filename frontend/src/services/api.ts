@@ -18,6 +18,15 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
+// Role types
+export type UserRole = 'student' | 'teacher' | 'admin';
+
+export interface Role {
+    value: UserRole;
+    label: string;
+    description: string;
+}
+
 // Test connection
 export const testConnection = async (): Promise<boolean> => {
     try {
@@ -74,9 +83,24 @@ export interface User {
     id: string;
     name: string;
     login: string;
-    is_admin: boolean;
+    role: UserRole;
+    is_admin: boolean; // для обратной совместимости
     quiz_points: number;
     created_at: string;
+}
+
+export interface CreateUserRequest {
+    name: string;
+    login: string;
+    password: string;
+    role: UserRole;
+}
+
+export interface UpdateUserRequest {
+    name?: string;
+    login?: string;
+    password?: string;
+    role?: UserRole;
 }
 
 export interface QuizAttempt {
@@ -296,7 +320,7 @@ export const getUser = async (userId: string): Promise<User> => {
     }
 };
 
-export const createUser = async (user: Omit<User, 'id' | 'created_at' | 'quiz_points'>): Promise<User> => {
+export const createUser = async (user: CreateUserRequest): Promise<User> => {
     try {
         const response = await api.post('/admin/users', user);
         return response.data;
@@ -306,7 +330,7 @@ export const createUser = async (user: Omit<User, 'id' | 'created_at' | 'quiz_po
     }
 };
 
-export const updateUser = async (userId: string, user: Partial<Omit<User, 'id' | 'created_at'>>): Promise<User> => {
+export const updateUser = async (userId: string, user: UpdateUserRequest): Promise<User> => {
     try {
         const response = await api.put(`/admin/users/${userId}`, user);
         return response.data;
@@ -338,12 +362,12 @@ export const login = async (login: string, password: string): Promise<{ token: s
     }
 };
 
-export const register = async (name: string, login: string, password: string): Promise<User> => {
+export const register = async (name: string, login: string, password: string, role: UserRole = 'student'): Promise<User> => {
     try {
-        const response = await api.post('/api/register', { name, login, password });
+        const response = await api.post('/api/register', { name, login, password, role });
         return response.data;
     } catch (error) {
-        console.error('Error registering:', error);
+        console.error('Error registering user:', error);
         throw error;
     }
 };
@@ -434,4 +458,35 @@ export async function getSavedLearningRecommendations(quizId: string): Promise<a
     console.error('Error fetching learning recommendations:', error);
     throw error;
   }
-} 
+}
+
+// Role management functions
+export const getRoles = async (): Promise<{ roles: Role[] }> => {
+    try {
+        const response = await api.get('/admin/roles');
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching roles:', error);
+        throw error;
+    }
+};
+
+export const getUsersByRole = async (role: UserRole): Promise<{ role: UserRole; count: number; users: User[] }> => {
+    try {
+        const response = await api.get(`/admin/users/by-role/${role}`);
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching users by role:', error);
+        throw error;
+    }
+};
+
+export const getUserProfile = async (): Promise<User> => {
+    try {
+        const response = await api.get('/api/profile');
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching user profile:', error);
+        throw error;
+    }
+}; 

@@ -6,7 +6,7 @@ import os
 from dotenv import load_dotenv
 from datetime import datetime
 from passlib.context import CryptContext
-from models import UserCreate, UserResponse, User
+from models import UserCreate, UserResponse, User, UserRole
 
 # Load .env from parent directory with encoding fallback
 env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
@@ -62,6 +62,8 @@ async def create_user(user: UserCreate):
         user_dict["password"] = pwd_context.hash(user_dict["password"])
         user_dict["created_at"] = datetime.now()
         user_dict["quiz_points"] = 0
+        # Убеждаемся, что роль корректно сохраняется как строка
+        user_dict["role"] = user.role.value
         
         # Сохраняем пользователя
         result = await db.users.insert_one(user_dict)
@@ -103,11 +105,21 @@ async def update_user(
         if "password" in user_update:
             user_update["password"] = pwd_context.hash(user_update["password"])
         
+        # Проверяем и валидируем роль, если она обновляется
+        if "role" in user_update:
+            try:
+                # Проверяем, что роль валидна
+                UserRole(user_update["role"])
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Недопустимая роль пользователя")
+        
         # Сохраняем существующие поля, которые не должны быть изменены
         if "quiz_points" not in user_update:
             user_update["quiz_points"] = existing_user.get("quiz_points", 0)
         if "created_at" not in user_update:
             user_update["created_at"] = existing_user.get("created_at", datetime.now())
+        if "role" not in user_update:
+            user_update["role"] = existing_user.get("role", "student")
         
         # Обновляем пользователя
         update_result = await db.users.update_one(
@@ -287,4 +299,64 @@ async def get_quiz(quiz_id: str = Path(..., description="ID теста для п
         return quiz
     except Exception as e:
         print(f"Error fetching quiz {quiz_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/roles",
+           summary="Получить список доступных ролей",
+           description="Возвращает список всех доступных ролей пользователей",
+           response_description="Список ролей с их описаниями")
+async def get_available_roles():
+    """
+    Возвращает список всех доступных ролей пользователей
+    """
+    try:
+        roles = [
+            {
+                "value": UserRole.student.value,
+                "label": "Студент",
+                "description": "Обычный пользователь, может проходить тесты и просматривать материалы"
+            },
+            {
+                "value": UserRole.teacher.value,
+                "label": "Преподаватель", 
+                "description": "Может создавать и редактировать тесты, просматривать результаты студентов"
+            },
+            {
+                "value": UserRole.admin.value,
+                "label": "Администратор",
+                "description": "Полные права доступа: управление пользователями, тестами и системой"
+            }
+        ]
+        return {"roles": roles}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/users/by-role/{role}",
+           summary="Получить пользователей по роли",
+           description="Возвращает список пользователей с определенной ролью",
+           response_description="Список пользователей указанной роли")
+async def get_users_by_role(role: str = Path(..., description="Роль пользователей для поиска")):
+    """
+    Возвращает список пользователей с указанной ролью
+    """
+    try:
+        # Проверяем, что роль валидна
+        try:
+            UserRole(role)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Недопустимая роль пользователя")
+        
+        users = []
+        cursor = db.users.find({"role": role}, {"password": 0})  # Exclude passwords
+        async for user in cursor:
+            user["id"] = str(user["_id"])
+            del user["_id"]
+            users.append(user)
+        
+        return {
+            "role": role,
+            "count": len(users),
+            "users": users
+        }
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) 

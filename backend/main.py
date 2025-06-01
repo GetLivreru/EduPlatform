@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 from fastapi.openapi.utils import get_openapi
 from motor.motor_asyncio import AsyncIOMotorClient
-from models import QuizBase, QuizQuestion, UserCreate, UserLogin, UserResponse, QuizDB, QuizResponse, UserInDB, QuizAttempt
+from models import QuizBase, QuizQuestion, UserCreate, UserLogin, UserResponse, QuizDB, QuizResponse, UserInDB, QuizAttempt, UserRole
 from middleware import create_access_token, get_current_user, require_admin
 from datetime import datetime, timedelta
 from passlib.context import CryptContext
@@ -100,6 +100,9 @@ async def register(user: UserCreate):
     user_dict = user.model_dump()
     user_dict["password"] = hashed_password
     user_dict["created_at"] = datetime.now()
+    user_dict["quiz_points"] = 0
+    # Сохраняем роль как строку
+    user_dict["role"] = user.role.value
     
     # Сохраняем пользователя
     result = await users_collection.insert_one(user_dict)
@@ -108,6 +111,7 @@ async def register(user: UserCreate):
     # Преобразуем _id в строку для правильной сериализации
     created_user["id"] = str(created_user["_id"])
     del created_user["_id"]
+    del created_user["password"]  # Не возвращаем пароль
     
     return UserResponse(**created_user)
 
@@ -128,6 +132,11 @@ async def login(user: UserLogin):
         expires_delta=access_token_expires
     )
     
+    # Получаем роль пользователя (для обратной совместимости проверяем старое поле is_admin)
+    user_role = db_user.get("role", "student")
+    if "is_admin" in db_user and db_user["is_admin"]:
+        user_role = "admin"
+    
     return {
         "access_token": access_token,
         "token_type": "bearer",
@@ -135,7 +144,8 @@ async def login(user: UserLogin):
             "id": str(db_user["_id"]),
             "name": db_user["name"],
             "login": db_user["login"],
-            "is_admin": db_user["is_admin"]
+            "role": user_role,
+            "is_admin": user_role == "admin"  # Для обратной совместимости
         }
     }
 
@@ -144,8 +154,32 @@ async def login(user: UserLogin):
         description="Проверяет, имеет ли текущий пользователь права администратора",
         tags=["аутентификация"])
 async def check_admin(current_user: UserInDB = Depends(get_current_user)):
+    # Проверяем роль пользователя
+    user_role = getattr(current_user, 'role', 'student')
+    is_admin = user_role == UserRole.admin.value or getattr(current_user, 'is_admin', False)
+    
     return {
-        "is_admin": current_user.is_admin
+        "is_admin": is_admin,
+        "role": user_role
+    }
+
+@app.get("/api/profile",
+        summary="Профиль пользователя",
+        description="Возвращает информацию о текущем пользователе",
+        tags=["аутентификация"])
+async def get_profile(current_user: UserInDB = Depends(get_current_user)):
+    """
+    Возвращает профиль текущего авторизованного пользователя
+    """
+    user_role = getattr(current_user, 'role', 'student')
+    
+    return {
+        "id": str(current_user.id) if hasattr(current_user, 'id') else str(current_user._id),
+        "name": current_user.name,
+        "login": current_user.login,
+        "role": user_role,
+        "quiz_points": getattr(current_user, 'quiz_points', 0),
+        "created_at": getattr(current_user, 'created_at', None)
     }
 
 if __name__ == "__main__":

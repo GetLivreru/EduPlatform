@@ -3,7 +3,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Optional
 import jwt
 from datetime import datetime, timedelta
-from models import UserInDB
+from models import UserInDB, UserRole
 from motor.motor_asyncio import AsyncIOMotorClient
 from bson import ObjectId
 import os
@@ -65,13 +65,51 @@ async def get_current_user(request: Request) -> UserInDB:
     # Создаем объект UserInDB из документа
     user_doc["id"] = str(user_doc["_id"])
     
+    # Обеспечиваем обратную совместимость для is_admin
+    user_role = user_doc.get("role", "student")
+    if "is_admin" in user_doc and user_doc["is_admin"]:
+        user_role = "admin"
+        user_doc["role"] = "admin"
+    
+    user_doc["is_admin"] = user_role == "admin"
+    
     return UserInDB(**user_doc)
 
 async def require_admin(request: Request):
     user = await get_current_user(request)
-    if not user.is_admin:
+    user_role = getattr(user, 'role', 'student')
+    is_admin = user_role == UserRole.admin.value or getattr(user, 'is_admin', False)
+    
+    if not is_admin:
         raise HTTPException(status_code=403, detail="Доступ запрещен. Требуются права администратора")
     return user
+
+async def require_teacher_or_admin(request: Request):
+    """
+    Требует роль преподавателя или администратора
+    """
+    user = await get_current_user(request)
+    user_role = getattr(user, 'role', 'student')
+    
+    if user_role not in [UserRole.teacher.value, UserRole.admin.value]:
+        raise HTTPException(status_code=403, detail="Доступ запрещен. Требуются права преподавателя или администратора")
+    return user
+
+async def require_role(required_role: UserRole):
+    """
+    Создает функцию зависимости для проверки конкретной роли
+    """
+    async def role_checker(request: Request):
+        user = await get_current_user(request)
+        user_role = getattr(user, 'role', 'student')
+        
+        if user_role != required_role.value:
+            raise HTTPException(
+                status_code=403, 
+                detail=f"Доступ запрещен. Требуется роль: {required_role.value}"
+            )
+        return user
+    return role_checker
 
 async def optional_auth(request: Request):
     """
@@ -97,6 +135,15 @@ async def optional_auth(request: Request):
         
         # Создаем объект UserInDB из документа
         user_doc["id"] = str(user_doc["_id"])
+        
+        # Обеспечиваем обратную совместимость для is_admin
+        user_role = user_doc.get("role", "student")
+        if "is_admin" in user_doc and user_doc["is_admin"]:
+            user_role = "admin"
+            user_doc["role"] = "admin"
+        
+        user_doc["is_admin"] = user_role == "admin"
+        
         return UserInDB(**user_doc)
     except Exception:
         return None 

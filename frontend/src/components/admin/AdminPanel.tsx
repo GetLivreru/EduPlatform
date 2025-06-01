@@ -1,21 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { FaUsers, FaBook, FaEdit, FaTrash, FaPlus, FaEye, FaTimes } from 'react-icons/fa';
-import { getAdminQuizzes, getUsers, deleteUser, deleteQuiz } from '../../services/api';
+import { FaUsers, FaBook, FaEdit, FaTrash, FaPlus, FaEye, FaTimes, FaFilter } from 'react-icons/fa';
+import { getAdminQuizzes, getUsers, deleteUser, deleteQuiz, getRoles, getUsersByRole, UserRole, Role, User } from '../../services/api';
 import { Quiz } from '../../services/api';
 import { useNavigate } from 'react-router-dom';
 import UserForm from './UserForm';
-
-interface User {
-    id: string;
-    name: string;
-    login: string;
-    is_admin: boolean;
-}
 
 const AdminPanel: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'users' | 'quizzes'>('users');
     const [quizzes, setQuizzes] = useState<Quiz[]>([]);
     const [users, setUsers] = useState<User[]>([]);
+    const [roles, setRoles] = useState<Role[]>([]);
+    const [selectedRole, setSelectedRole] = useState<UserRole | 'all'>('all');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
@@ -25,6 +20,19 @@ const AdminPanel: React.FC = () => {
     const [selectedUser, setSelectedUser] = useState<User | undefined>(undefined);
 
     useEffect(() => {
+        const fetchRoles = async () => {
+            try {
+                const rolesData = await getRoles();
+                setRoles(rolesData.roles);
+            } catch (err) {
+                console.error('Error fetching roles:', err);
+            }
+        };
+
+        fetchRoles();
+    }, []);
+
+    useEffect(() => {
         const fetchData = async () => {
             try {
                 setLoading(true);
@@ -32,8 +40,13 @@ const AdminPanel: React.FC = () => {
                     const quizzesData = await getAdminQuizzes();
                     setQuizzes(quizzesData);
                 } else {
-                    const usersData = await getUsers();
-                    setUsers(usersData);
+                    if (selectedRole === 'all') {
+                        const usersData = await getUsers();
+                        setUsers(usersData);
+                    } else {
+                        const roleUsersData = await getUsersByRole(selectedRole);
+                        setUsers(roleUsersData.users);
+                    }
                 }
             } catch (err) {
                 setError('Ошибка при загрузке данных');
@@ -43,7 +56,7 @@ const AdminPanel: React.FC = () => {
         };
 
         fetchData();
-    }, [activeTab]);
+    }, [activeTab, selectedRole]);
 
     const handleDeleteQuiz = async (quizId: string) => {
         if (window.confirm('Вы уверены, что хотите удалить этот тест?')) {
@@ -86,8 +99,13 @@ const AdminPanel: React.FC = () => {
         if (activeTab === 'users') {
             const fetchUsers = async () => {
                 try {
-                    const usersData = await getUsers();
-                    setUsers(usersData);
+                    if (selectedRole === 'all') {
+                        const usersData = await getUsers();
+                        setUsers(usersData);
+                    } else {
+                        const roleUsersData = await getUsersByRole(selectedRole);
+                        setUsers(roleUsersData.users);
+                    }
                 } catch (err) {
                     setError('Ошибка при обновлении списка пользователей');
                 }
@@ -104,6 +122,24 @@ const AdminPanel: React.FC = () => {
     const closeQuizModal = () => {
         setSelectedQuiz(null);
         setShowQuizModal(false);
+    };
+
+    const getRoleDisplayName = (role: UserRole) => {
+        const roleObj = roles.find(r => r.value === role);
+        return roleObj ? roleObj.label : role;
+    };
+
+    const getRoleBadgeColor = (role: UserRole) => {
+        switch (role) {
+            case 'admin':
+                return 'bg-red-100 text-red-800';
+            case 'teacher':
+                return 'bg-blue-100 text-blue-800';
+            case 'student':
+                return 'bg-green-100 text-green-800';
+            default:
+                return 'bg-gray-100 text-gray-800';
+        }
     };
 
     return (
@@ -148,14 +184,36 @@ const AdminPanel: React.FC = () => {
                 </div>
             ) : activeTab === 'users' ? (
                 <div className="bg-white rounded-lg shadow overflow-hidden">
-                    <div className="p-4 border-b border-gray-200">
-                        <button 
-                            onClick={handleAddUser}
-                            className="bg-green-500 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-green-600"
-                        >
-                            <FaPlus />
-                            <span>Добавить пользователя</span>
-                        </button>
+                    <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+                        <div className="flex items-center space-x-4">
+                            <button 
+                                onClick={handleAddUser}
+                                className="bg-green-500 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-green-600"
+                            >
+                                <FaPlus />
+                                <span>Добавить пользователя</span>
+                            </button>
+                            
+                            <div className="flex items-center space-x-2">
+                                <FaFilter className="text-gray-500" />
+                                <select
+                                    value={selectedRole}
+                                    onChange={(e) => setSelectedRole(e.target.value as UserRole | 'all')}
+                                    className="border border-gray-300 rounded px-3 py-1 text-sm"
+                                >
+                                    <option value="all">Все роли</option>
+                                    {roles.map((role) => (
+                                        <option key={role.value} value={role.value}>
+                                            {role.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div className="text-sm text-gray-600">
+                            Всего пользователей: {users.length}
+                        </div>
                     </div>
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
@@ -168,6 +226,9 @@ const AdminPanel: React.FC = () => {
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Роль
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Баллы
                                 </th>
                                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Действия
@@ -184,22 +245,25 @@ const AdminPanel: React.FC = () => {
                                         <div className="text-sm text-gray-500">{user.login}</div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                            user.is_admin ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                                        }`}>
-                                            {user.is_admin ? 'Администратор' : 'Пользователь'}
+                                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getRoleBadgeColor(user.role)}`}>
+                                            {getRoleDisplayName(user.role)}
                                         </span>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="text-sm text-gray-900">{user.quiz_points || 0}</div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <button
                                             onClick={() => handleEditUser(user)}
                                             className="text-blue-600 hover:text-blue-900 mr-4"
+                                            title="Редактировать пользователя"
                                         >
                                             <FaEdit />
                                         </button>
                                         <button
                                             onClick={() => handleDeleteUser(user.id)}
                                             className="text-red-600 hover:text-red-900"
+                                            title="Удалить пользователя"
                                         >
                                             <FaTrash />
                                         </button>
@@ -213,185 +277,96 @@ const AdminPanel: React.FC = () => {
                 <div className="bg-white rounded-lg shadow overflow-hidden">
                     <div className="p-4 border-b border-gray-200">
                         <button 
-                            onClick={() => navigate('/admin/quizzes/new')}
+                            onClick={() => navigate('/admin/quizzes/create')}
                             className="bg-green-500 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-green-600"
                         >
                             <FaPlus />
-                            <span>Добавить тест</span>
+                            <span>Создать тест</span>
                         </button>
                     </div>
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Название
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Предмет
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Сложность
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Вопросов
-                                </th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Действия
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                            {quizzes.map((quiz) => (
-                                <tr key={quiz._id}>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-sm font-medium text-gray-900">{quiz.title}</div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-sm text-gray-500">{quiz.category}</div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                            quiz.difficulty?.toLowerCase() === 'easy' ? 'bg-green-100 text-green-800' :
-                                            quiz.difficulty?.toLowerCase() === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                                            quiz.difficulty?.toLowerCase() === 'hard' ? 'bg-red-100 text-red-800' :
-                                            'bg-gray-100 text-gray-800'
-                                        }`}>
-                                            {quiz.difficulty || 'Unknown'}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-sm text-gray-500">{quiz.questions.length}</div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <button
-                                            onClick={() => quiz._id && handleViewQuiz(quiz)}
-                                            className="text-gray-600 hover:text-gray-900 mr-4"
-                                        >
-                                            <FaEye />
-                                        </button>
-                                        <button
-                                            onClick={() => quiz._id && handleEditQuiz(quiz._id)}
-                                            className="text-blue-600 hover:text-blue-900 mr-4"
-                                            disabled={!quiz._id}
-                                        >
-                                            <FaEdit />
-                                        </button>
-                                        <button
-                                            onClick={() => quiz._id && handleDeleteQuiz(quiz._id)}
-                                            className="text-red-600 hover:text-red-900"
-                                            disabled={!quiz._id}
-                                        >
-                                            <FaTrash />
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            )}
-            
-            {/* Модальное окно для просмотра подробностей квиза */}
-            {showQuizModal && selectedQuiz && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-                        <div className="flex justify-between items-center border-b border-gray-200 px-6 py-4">
-                            <h2 className="text-xl font-bold text-gray-900">Просмотр теста</h2>
-                            <button
-                                onClick={closeQuizModal}
-                                className="text-gray-500 hover:text-gray-700"
-                            >
-                                <FaTimes size={20} />
-                            </button>
-                        </div>
-                        
-                        <div className="p-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                                <div>
-                                    <h3 className="text-sm font-medium text-gray-500">Название</h3>
-                                    <p className="text-lg font-medium text-gray-900">{selectedQuiz.title}</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
+                        {quizzes.map((quiz) => (
+                            <div key={quiz._id} className="border rounded-lg p-4 hover:shadow-lg transition-shadow">
+                                <h3 className="text-lg font-semibold mb-2">{quiz.title}</h3>
+                                <p className="text-gray-600 text-sm mb-2">{quiz.description}</p>
+                                <div className="flex justify-between items-center text-xs text-gray-500 mb-4">
+                                    <span>Категория: {quiz.category}</span>
+                                    <span>Вопросов: {quiz.questions?.length || 0}</span>
                                 </div>
-                                
-                                <div>
-                                    <h3 className="text-sm font-medium text-gray-500">Категория</h3>
-                                    <p className="text-lg font-medium text-gray-900">{selectedQuiz.category}</p>
-                                </div>
-                                
-                                <div>
-                                    <h3 className="text-sm font-medium text-gray-500">Сложность</h3>
-                                    <p className="text-lg font-medium text-gray-900">{selectedQuiz.difficulty}</p>
-                                </div>
-                                
-                                <div>
-                                    <h3 className="text-sm font-medium text-gray-500">Время (минуты)</h3>
-                                    <p className="text-lg font-medium text-gray-900">{selectedQuiz.time_limit}</p>
-                                </div>
-                                
-                                <div className="md:col-span-2">
-                                    <h3 className="text-sm font-medium text-gray-500">Описание</h3>
-                                    <p className="text-base text-gray-900">{selectedQuiz.description}</p>
+                                <div className="flex justify-end space-x-2">
+                                    <button
+                                        onClick={() => handleViewQuiz(quiz)}
+                                        className="text-green-600 hover:text-green-900"
+                                        title="Просмотреть тест"
+                                    >
+                                        <FaEye />
+                                    </button>
+                                    <button
+                                        onClick={() => handleEditQuiz(quiz._id!)}
+                                        className="text-blue-600 hover:text-blue-900"
+                                        title="Редактировать тест"
+                                    >
+                                        <FaEdit />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDeleteQuiz(quiz._id!)}
+                                        className="text-red-600 hover:text-red-900"
+                                        title="Удалить тест"
+                                    >
+                                        <FaTrash />
+                                    </button>
                                 </div>
                             </div>
-                            
-                            <h3 className="text-lg font-bold text-gray-900 mb-4 border-b border-gray-200 pb-2">
-                                Вопросы ({selectedQuiz.questions.length})
-                            </h3>
-                            
-                            <div className="space-y-6">
-                                {selectedQuiz.questions.map((question, index) => (
-                                    <div key={index} className="border border-gray-200 rounded-lg p-4">
-                                        <h4 className="font-medium text-gray-900 mb-2">
-                                            Вопрос {index + 1}: {question.text}
-                                        </h4>
-                                        
-                                        <ul className="space-y-1 mt-2">
-                                            {question.options.map((option, optIndex) => (
-                                                <li
-                                                    key={optIndex}
-                                                    className={`py-1 px-2 rounded ${
-                                                        optIndex === question.correct_answer
-                                                            ? 'bg-green-100 text-green-800'
-                                                            : ''
-                                                    }`}
-                                                >
-                                                    {optIndex === question.correct_answer && '✓ '}
-                                                    {option}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                        
-                        <div className="border-t border-gray-200 px-6 py-4 flex justify-end">
-                            <button
-                                onClick={() => {
-                                    closeQuizModal();
-                                    selectedQuiz._id && handleEditQuiz(selectedQuiz._id);
-                                }}
-                                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mr-2"
-                                disabled={!selectedQuiz._id}
-                            >
-                                Редактировать
-                            </button>
-                            <button
-                                onClick={closeQuizModal}
-                                className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300"
-                            >
-                                Закрыть
-                            </button>
-                        </div>
+                        ))}
                     </div>
                 </div>
             )}
 
             {showUserForm && (
-                <UserForm
+                <UserForm 
                     user={selectedUser}
                     onClose={() => setShowUserForm(false)}
                     onSuccess={handleUserFormSuccess}
                 />
+            )}
+
+            {showQuizModal && selectedQuiz && (
+                <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
+                    <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-4xl max-h-screen overflow-y-auto">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-2xl font-bold">{selectedQuiz.title}</h2>
+                            <button
+                                onClick={closeQuizModal}
+                                className="text-gray-500 hover:text-gray-700"
+                            >
+                                <FaTimes size={24} />
+                            </button>
+                        </div>
+                        <div className="mb-4">
+                            <p className="text-gray-600">{selectedQuiz.description}</p>
+                            <div className="mt-2 text-sm text-gray-500">
+                                <span>Категория: {selectedQuiz.category}</span>
+                                <span className="ml-4">Сложность: {selectedQuiz.difficulty}</span>
+                                <span className="ml-4">Время: {selectedQuiz.time_limit} мин</span>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-semibold mb-2">Вопросы ({selectedQuiz.questions?.length || 0})</h3>
+                            {selectedQuiz.questions?.map((question, index) => (
+                                <div key={index} className="mb-4 p-3 border rounded">
+                                    <p className="font-medium mb-2">{index + 1}. {question.text}</p>
+                                    <ul className="list-disc list-inside ml-4">
+                                        {question.options.map((option, optionIndex) => (
+                                            <li key={optionIndex} className={optionIndex === question.correct_answer ? 'text-green-600 font-medium' : ''}>
+                                                {option}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );
