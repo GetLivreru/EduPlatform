@@ -9,7 +9,19 @@ from bson import ObjectId
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+# Load .env from the same directory as this file with encoding fallback
+env_path = os.path.join(os.path.dirname(__file__), '.env')
+try:
+    load_dotenv(env_path, encoding='utf-8')
+except UnicodeDecodeError:
+    try:
+        load_dotenv(env_path, encoding='utf-16')
+    except Exception:
+        # If all encoding attempts fail, continue without .env
+        pass
+except FileNotFoundError:
+    # .env file doesn't exist - continue with defaults
+    pass
 
 SECRET_KEY = "your-secret-key-here"  # В реальном приложении используйте безопасный ключ
 ALGORITHM = "HS256"

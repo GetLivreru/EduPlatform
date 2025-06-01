@@ -8,7 +8,19 @@ from datetime import datetime
 from passlib.context import CryptContext
 from models import UserCreate, UserResponse, User
 
-load_dotenv()
+# Load .env from parent directory with encoding fallback
+env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
+try:
+    load_dotenv(env_path, encoding='utf-8')
+except UnicodeDecodeError:
+    try:
+        load_dotenv(env_path, encoding='utf-16')
+    except Exception:
+        # If all encoding attempts fail, continue without .env
+        pass
+except FileNotFoundError:
+    # .env file doesn't exist - continue with defaults
+    pass
 
 router = APIRouter()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

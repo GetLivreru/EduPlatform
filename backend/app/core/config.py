@@ -3,7 +3,19 @@ from typing import Optional, List
 from pydantic_settings import BaseSettings
 from dotenv import load_dotenv
 
-load_dotenv()
+# Load .env from backend directory (two levels up from this file) with encoding fallback
+env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), '.env')
+try:
+    load_dotenv(env_path, encoding='utf-8')
+except UnicodeDecodeError:
+    try:
+        load_dotenv(env_path, encoding='utf-16')
+    except Exception:
+        # If all encoding attempts fail, continue without .env
+        pass
+except FileNotFoundError:
+    # .env file doesn't exist - continue with defaults
+    pass
 
 class Settings(BaseSettings):
     # MongoDB settings
