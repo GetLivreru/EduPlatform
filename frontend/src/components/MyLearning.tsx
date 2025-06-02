@@ -36,6 +36,14 @@ const SidebarHeader = styled.h2`
   margin: 0;
   font-size: 1.2rem;
   border-bottom: 1px solid #e1e5ea;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  &::before {
+    content: '🤖';
+    font-size: 1rem;
+  }
 `;
 
 const QuizItem = styled.div<{ active: boolean }>`
@@ -91,6 +99,14 @@ const ContentTitle = styled.h1`
   margin: 0 0 10px 0;
   font-size: 1.8rem;
   color: #333;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  
+  &::before {
+    content: '🧠';
+    font-size: 1.5rem;
+  }
 `;
 
 const ContentMeta = styled.div`
@@ -346,10 +362,11 @@ const MyLearning: React.FC = () => {
   return (
     <PageContainer>
       <Sidebar>
-        <SidebarHeader>Пройденные квизы</SidebarHeader>
+        <SidebarHeader>ИИ Анализ тестов</SidebarHeader>
         {results.length === 0 ? (
           <NoResults>
             <p>Нет пройденных квизов</p>
+            <small>Пройдите тест, чтобы получить персональные рекомендации от ИИ</small>
           </NoResults>
         ) : (
           results.map((result) => (
@@ -370,29 +387,30 @@ const MyLearning: React.FC = () => {
 
       <MainContent>
         {loading ? (
-          <LoadingMessage>Загрузка...</LoadingMessage>
+          <LoadingMessage>Загрузка ИИ рекомендаций...</LoadingMessage>
         ) : error ? (
           <ErrorMessage>{error}</ErrorMessage>
         ) : !selectedQuiz ? (
           <NoResults>
-            <h2>Выберите квиз</h2>
-            <p>Выберите пройденный квиз слева, чтобы увидеть персонализированный план обучения.</p>
+            <h2>🎯 Персональные ИИ-рекомендации</h2>
+            <p>Выберите пройденный квиз слева, чтобы увидеть персонализированный план обучения, созданный искусственным интеллектом на основе ваших результатов.</p>
           </NoResults>
         ) : recommendation ? (
           <>
             <ContentHeader>
-              <ContentTitle>Ваш персональный план обучения</ContentTitle>
+              <ContentTitle>Персональный ИИ-план обучения</ContentTitle>
               <ContentMeta>
-                Дата создания: {recommendation.created_at ? formatDate(recommendation.created_at) : 'Только что'}
+                🔬 Анализ создан искусственным интеллектом • 
+                Дата: {recommendation.created_at ? formatDate(recommendation.created_at) : 'Только что'}
               </ContentMeta>
             </ContentHeader>
 
             {recommendation.weak_areas && recommendation.weak_areas.length > 0 && (
               <LearningSection>
-                <SectionTitle>Области для улучшения</SectionTitle>
+                <SectionTitle>🎯 Области для улучшения</SectionTitle>
                 <WeakAreasList>
                   {recommendation.weak_areas.map((area, index) => (
-                    <WeakAreaItem key={index}>{area}</WeakAreaItem>
+                    <WeakAreaItem key={index}>📍 {area}</WeakAreaItem>
                   ))}
                 </WeakAreasList>
               </LearningSection>
@@ -400,11 +418,11 @@ const MyLearning: React.FC = () => {
 
             {recommendation.learning_resources && recommendation.learning_resources.length > 0 && (
               <LearningSection>
-                <SectionTitle>Рекомендуемые ресурсы</SectionTitle>
+                <SectionTitle>📚 ИИ-рекомендуемые ресурсы</SectionTitle>
                 <ResourcesList>
                   {recommendation.learning_resources.map((resource, index) => (
                     <ResourceCard key={index} href={resource.url} target="_blank" rel="noopener noreferrer">
-                      <ResourceTitle>{resource.title}</ResourceTitle>
+                      <ResourceTitle>🔗 {resource.title}</ResourceTitle>
                     </ResourceCard>
                   ))}
                 </ResourcesList>
@@ -413,10 +431,10 @@ const MyLearning: React.FC = () => {
 
             {recommendation.practice_exercises && recommendation.practice_exercises.length > 0 && (
               <LearningSection>
-                <SectionTitle>Практические упражнения</SectionTitle>
+                <SectionTitle>💪 Практические упражнения</SectionTitle>
                 <ExercisesList>
                   {recommendation.practice_exercises.map((exercise, index) => (
-                    <ExerciseItem key={index}>{exercise}</ExerciseItem>
+                    <ExerciseItem key={index}>✅ {exercise}</ExerciseItem>
                   ))}
                 </ExercisesList>
               </LearningSection>
@@ -424,13 +442,13 @@ const MyLearning: React.FC = () => {
 
             {recommendation.study_schedule && recommendation.study_schedule.length > 0 && (
               <ScheduleSection>
-                <SectionTitle>График обучения</SectionTitle>
+                <SectionTitle>📅 ИИ-составленный график обучения</SectionTitle>
                 {recommendation.study_schedule.map((day, index) => (
                   <ScheduleDay key={index}>
-                    <DayTitle>{day.day}</DayTitle>
+                    <DayTitle>📆 {day.day}</DayTitle>
                     <TasksList>
                       {day.tasks.map((task, taskIndex) => (
-                        <TaskItem key={taskIndex}>{task}</TaskItem>
+                        <TaskItem key={taskIndex}>• {task}</TaskItem>
                       ))}
                     </TasksList>
                   </ScheduleDay>
@@ -440,10 +458,10 @@ const MyLearning: React.FC = () => {
 
             {recommendation.expected_outcomes && recommendation.expected_outcomes.length > 0 && (
               <LearningSection>
-                <SectionTitle>Ожидаемые результаты</SectionTitle>
+                <SectionTitle>🏆 Ожидаемые результаты</SectionTitle>
                 <OutcomesList>
                   {recommendation.expected_outcomes.map((outcome, index) => (
-                    <OutcomeItem key={index}>{outcome}</OutcomeItem>
+                    <OutcomeItem key={index}>🎯 {outcome}</OutcomeItem>
                   ))}
                 </OutcomesList>
               </LearningSection>
@@ -451,8 +469,8 @@ const MyLearning: React.FC = () => {
           </>
         ) : (
           <NoResults>
-            <h2>Рекомендации не найдены</h2>
-            <p>К сожалению, для данного квиза нет персонализированных рекомендаций.</p>
+            <h2>🤖 ИИ-рекомендации не найдены</h2>
+            <p>К сожалению, для данного квиза нет персонализированных рекомендаций. Попробуйте пройти тест еще раз или выберите другой квиз.</p>
           </NoResults>
         )}
       </MainContent>

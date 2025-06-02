@@ -234,7 +234,7 @@ async def finish_quiz(
                 else:
                     incorrect_questions.append({
                         "question_id": str(question["_id"]) if "_id" in question else str(question_idx),
-                        "question_text": question["text"],
+                        "question_text": question.get("question", question.get("text", "Unknown question")),
                         "user_answer": question["options"][answer["answer"]],
                         "correct_answer": question["options"][question["correct_answer"]]
                     })

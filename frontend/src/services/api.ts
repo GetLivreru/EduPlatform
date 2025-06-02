@@ -79,6 +79,53 @@ export interface Quiz {
     difficulty?: string;
 }
 
+// Document and AI Quiz Generation interfaces
+export interface DocumentInfo {
+    id: string;
+    filename: string;
+    content_type: string;
+    size: number;
+    uploaded_by: string;
+    uploaded_at: string;
+    text_length: number;
+    generated_quizzes: number;
+}
+
+export interface UploadDocumentRequest {
+    file: File;
+    quiz_title: string;
+    difficulty: string;
+    questions_count: number;
+}
+
+export interface UploadDocumentResponse {
+    message: string;
+    document_id: string;
+    quiz_id: string;
+    quiz: Quiz;
+}
+
+export interface TeacherQuiz {
+    id: string;
+    title: string;
+    description: string;
+    category: string;
+    difficulty: string;
+    created_by: string;
+    source_document_id?: string;
+    attempts_count: number;
+    created_at: string;
+}
+
+export interface QuizStats {
+    quiz_title: string;
+    total_attempts: number;
+    completed_attempts: number;
+    average_score: number;
+    completion_rate: number;
+    attempts: any[];
+}
+
 export interface User {
     id: string;
     name: string;
@@ -487,6 +534,73 @@ export const getUserProfile = async (): Promise<User> => {
         return response.data;
     } catch (error) {
         console.error('Error fetching user profile:', error);
+        throw error;
+    }
+};
+
+// Teachers functions - Document and AI Quiz Generation
+export const uploadDocumentAndGenerateQuiz = async (
+    file: File,
+    quiz_title: string,
+    difficulty: string,
+    questions_count: number
+): Promise<UploadDocumentResponse> => {
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('quiz_title', quiz_title);
+        formData.append('difficulty', difficulty);
+        formData.append('questions_count', questions_count.toString());
+
+        const response = await api.post('/teachers/upload-document', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        
+        return response.data;
+    } catch (error) {
+        console.error('Error uploading document:', error);
+        throw error;
+    }
+};
+
+export const getMyDocuments = async (): Promise<{ documents: DocumentInfo[] }> => {
+    try {
+        const response = await api.get('/teachers/my-documents');
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching my documents:', error);
+        throw error;
+    }
+};
+
+export const getMyGeneratedQuizzes = async (): Promise<{ quizzes: TeacherQuiz[] }> => {
+    try {
+        const response = await api.get('/teachers/my-generated-quizzes');
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching my generated quizzes:', error);
+        throw error;
+    }
+};
+
+export const deleteDocument = async (documentId: string): Promise<{ message: string }> => {
+    try {
+        const response = await api.delete(`/teachers/documents/${documentId}`);
+        return response.data;
+    } catch (error) {
+        console.error('Error deleting document:', error);
+        throw error;
+    }
+};
+
+export const getQuizStats = async (quizId: string): Promise<QuizStats> => {
+    try {
+        const response = await api.get(`/teachers/quiz-stats/${quizId}`);
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching quiz stats:', error);
         throw error;
     }
 }; 

@@ -4,12 +4,12 @@ from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 from fastapi.openapi.utils import get_openapi
 from motor.motor_asyncio import AsyncIOMotorClient
 from models import QuizBase, QuizQuestion, UserCreate, UserLogin, UserResponse, QuizDB, QuizResponse, UserInDB, QuizAttempt, UserRole
-from middleware import create_access_token, get_current_user, require_admin
+from middleware import create_access_token, get_current_user, require_admin, require_teacher_or_admin
 from datetime import datetime, timedelta
 from passlib.context import CryptContext
 from bson import ObjectId
 from typing import List
-from routers import quiz_attempts, quizzes, admin
+from routers import quiz_attempts, quizzes, admin, teachers
 import os
 
 app = FastAPI(
@@ -47,6 +47,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 app.include_router(quiz_attempts.router, prefix="/api/quiz-attempts", tags=["quiz-attempts"])
 app.include_router(quizzes.router, tags=["quizzes"])
 app.include_router(admin.router, prefix="/admin", tags=["admin"], dependencies=[Depends(require_admin)])
+app.include_router(teachers.router, prefix="/teachers", tags=["teachers"])
 
 # Кастомные эндпоинты для документации
 @app.get("/docs", include_in_schema=False)
