@@ -1,0 +1,21 @@
+# База данных MongoDB
+MONGODB_URL=mongodb://localhost:27017/LearnApp
+
+# Redis для кэширования и сессий
+REDIS_URL=redis://localhost:6379
+
+# JWT токены
+SECRET_KEY=your-super-secret-key-here-change-in-production
+JWT_ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+# OpenAI API для ИИ генерации
+OPENAI_API_KEY=your-openai-api-key-here
+
+# Настройки приложения
+DEBUG=true
+HOST=0.0.0.0
+PORT=8000
+
+# CORS настройки
+ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000 

@@ -5,6 +5,7 @@ from fastapi.openapi.utils import get_openapi
 from motor.motor_asyncio import AsyncIOMotorClient
 from models import QuizBase, QuizQuestion, UserCreate, UserLogin, UserResponse, QuizDB, QuizResponse, UserInDB, QuizAttempt, UserRole
 from middleware import create_access_token, get_current_user, require_admin, require_teacher_or_admin
+from redis_cache import cache
 from datetime import datetime, timedelta
 from passlib.context import CryptContext
 from bson import ObjectId
@@ -42,6 +43,22 @@ quiz_attempts_collection = db.quiz_attempts
 
 # Настройка хеширования паролей
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# === СОБЫТИЯ ЖИЗНЕННОГО ЦИКЛА ===
+
+@app.on_event("startup")
+async def startup_event():
+    """Инициализация при запуске приложения"""
+    # Подключаем Redis
+    await cache.connect()
+    print("🚀 Приложение запущено")
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Очистка при остановке приложения"""
+    # Отключаем Redis
+    await cache.disconnect()
+    print("🛑 Приложение остановлено")
 
 # Include routers
 app.include_router(quiz_attempts.router, prefix="/api/quiz-attempts", tags=["quiz-attempts"])
@@ -138,11 +155,26 @@ async def login(user: UserLogin):
     if "is_admin" in db_user and db_user["is_admin"]:
         user_role = "admin"
     
+    # Сохраняем сессию в Redis
+    user_id = str(db_user["_id"])
+    session_data = {
+        "id": user_id,
+        "name": db_user["name"],
+        "login": db_user["login"],
+        "role": user_role,
+        "quiz_points": db_user.get("quiz_points", 0),
+        "last_activity": datetime.now().isoformat()
+    }
+    await cache.save_session(user_id, session_data)
+    
+    # Кэшируем профиль пользователя
+    await cache.cache_user_profile(user_id, session_data)
+    
     return {
         "access_token": access_token,
         "token_type": "bearer",
         "user": {
-            "id": str(db_user["_id"]),
+            "id": user_id,
             "name": db_user["name"],
             "login": db_user["login"],
             "role": user_role,
@@ -172,16 +204,30 @@ async def get_profile(current_user: UserInDB = Depends(get_current_user)):
     """
     Возвращает профиль текущего авторизованного пользователя
     """
-    user_role = getattr(current_user, 'role', 'student')
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else str(current_user._id)
     
-    return {
-        "id": str(current_user.id) if hasattr(current_user, 'id') else str(current_user._id),
+    # Сначала пробуем получить из кэша
+    cached_profile = await cache.get_user_profile(user_id)
+    if cached_profile:
+        print(f"📦 Профиль пользователя {user_id} получен из кэша")
+        return cached_profile
+    
+    # Если нет в кэше, получаем из БД
+    user_role = getattr(current_user, 'role', 'student')
+    profile_data = {
+        "id": user_id,
         "name": current_user.name,
         "login": current_user.login,
         "role": user_role,
         "quiz_points": getattr(current_user, 'quiz_points', 0),
         "created_at": getattr(current_user, 'created_at', None)
     }
+    
+    # Кэшируем профиль
+    await cache.cache_user_profile(user_id, profile_data)
+    print(f"💾 Профиль пользователя {user_id} сохранен в кэш")
+    
+    return profile_data
 
 if __name__ == "__main__":
     import uvicorn

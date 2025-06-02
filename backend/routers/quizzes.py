@@ -7,6 +7,7 @@ from datetime import datetime
 from typing import List, Dict, Optional
 from models import QuizBase, QuizResponse
 from middleware import require_admin
+from redis_cache import cache
 
 # Load .env from parent directory with encoding fallback
 env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
@@ -36,6 +37,13 @@ db = client.LearnApp
            tags=["quizzes"])
 async def get_quizzes():
     try:
+        # Сначала пробуем получить из кэша
+        cached_quizzes = await cache.get_quizzes_list()
+        if cached_quizzes:
+            print("📦 Список квизов получен из кэша")
+            return cached_quizzes
+
+        # Если нет в кэше, получаем из БД
         quizzes = []
         cursor = db.quizzes.find()
         async for quiz_doc in cursor:
@@ -46,6 +54,11 @@ async def get_quizzes():
                 quizzes.append(quiz_doc)
             except Exception as e:
                 continue
+        
+        # Кэшируем результат на 10 минут
+        await cache.cache_quizzes_list(quizzes, ttl=600)
+        print(f"💾 Список квизов ({len(quizzes)} шт.) сохранен в кэш")
+        
         return quizzes
     except Exception as e:
         raise HTTPException(
@@ -60,12 +73,25 @@ async def get_quizzes():
            tags=["quizzes"])
 async def get_quiz(quiz_id: str = Path(..., description="ID теста для получения")):
     try:
+        # Сначала пробуем получить из кэша
+        cached_quiz = await cache.get_quiz(quiz_id)
+        if cached_quiz:
+            print(f"📦 Квиз {quiz_id} получен из кэша")
+            return cached_quiz
+
+        # Если нет в кэше, получаем из БД
         quiz = await db.quizzes.find_one({"_id": ObjectId(quiz_id)})
         if not quiz:
             raise HTTPException(status_code=404, detail="Тест не найден")
+        
         # Преобразуем _id в строку для правильной сериализации
         quiz["id"] = str(quiz["_id"])
         del quiz["_id"]  # Удаляем _id, так как он уже преобразован в id
+        
+        # Кэшируем квиз на 1 час
+        await cache.cache_quiz(quiz_id, quiz, ttl=3600)
+        print(f"💾 Квиз {quiz_id} сохранен в кэш")
+        
         return quiz
     except Exception as e:
         raise HTTPException(
@@ -101,6 +127,10 @@ async def create_quiz(
         
         result = await db.quizzes.insert_one(quiz)
         quiz["id"] = str(result.inserted_id)
+        
+        # Инвалидируем кэш списка квизов
+        await cache.delete("quizzes:all")
+        print("🗑️ Кэш списка квизов очищен после создания нового квиза")
         
         return quiz
     except Exception as e:
@@ -147,6 +177,10 @@ async def update_quiz(
             quiz = await db.quizzes.find_one({"_id": ObjectId(quiz_id)})
             if not quiz:
                 raise HTTPException(status_code=404, detail="Тест не найден")
+        
+        # Инвалидируем кэш квиза и списка квизов
+        await cache.invalidate_quiz_cache(quiz_id)
+        print(f"🗑️ Кэш квиза {quiz_id} очищен после обновления")
             
         return {"message": "Тест успешно обновлен"}
     except Exception as e:
@@ -162,6 +196,11 @@ async def delete_quiz(quiz_id: str = Path(..., description="ID теста для
         result = await db.quizzes.delete_one({"_id": ObjectId(quiz_id)})
         if result.deleted_count == 0:
             raise HTTPException(status_code=404, detail="Тест не найден")
+        
+        # Инвалидируем кэш квиза и списка квизов
+        await cache.invalidate_quiz_cache(quiz_id)
+        print(f"🗑️ Кэш квиза {quiz_id} очищен после удаления")
+        
         return {"message": "Тест успешно удален"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) 
