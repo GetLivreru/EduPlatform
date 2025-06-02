@@ -1,0 +1,19 @@
+# MongoDB Atlas Configuration
+# Замените следующие значения на ваши данные из Atlas:
+# 1. YOUR_USERNAME - имя пользователя базы данных
+# 2. YOUR_PASSWORD - пароль пользователя  
+# 3. YOUR_CLUSTER - название вашего кластера
+# 4. XXXXX - уникальный идентификатор кластера
+MONGODB_URL=mongodb+srv://YOUR_USERNAME:YOUR_PASSWORD@YOUR_CLUSTER.xxxxx.mongodb.net/LearnApp?retryWrites=true&w=majority
+
+# Секретный ключ для JWT токенов (сгенерируйте случайную строку)
+SECRET_KEY=your_super_secret_key_here_change_this_in_production
+
+# CORS настройки для фронтенда
+CORS_ORIGINS=http://localhost:3000,http://localhost:8080,http://127.0.0.1:3000
+
+# OpenAI API ключ (если используется)
+OPENAI_API_KEY=your_openai_api_key_here
+
+# Пример заполненного MONGODB_URL:
+# MONGODB_URL=mongodb+srv://eduplatform_user:MySecurePass123@eduplatform-cluster.abc12.mongodb.net/LearnApp?retryWrites=true&w=majority 
