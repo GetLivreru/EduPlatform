@@ -6,8 +6,9 @@ import os
 from dotenv import load_dotenv
 from datetime import datetime
 from openai import OpenAI
-from models import User, UserRole
+from models import User, UserRole, DocumentS3
 from middleware import require_teacher_or_admin, get_current_user
+from s3_service import s3_service
 import json
 import io
 import traceback
@@ -135,6 +136,75 @@ async def extract_text_from_file(file: UploadFile) -> str:
                 supported_formats.insert(0, "PDF")
             
             logger.error(f"❌ Неподдерживаемый тип файла: {file.content_type}")
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Неподдерживаемый тип файла. Поддерживаются: {', '.join(supported_formats)}"
+            )
+            
+    except Exception as e:
+        logger.error(f"❌ Ошибка при обработке файла: {str(e)}")
+        logger.error(f"❌ Трассировка: {traceback.format_exc()}")
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(status_code=500, detail=f"Ошибка при обработке файла: {str(e)}")
+
+async def extract_text_from_bytes(file_content: bytes, content_type: str, filename: str) -> str:
+    """Извлекает текст из байтов файла (для S3)"""
+    logger.info(f"📄 Начало обработки файла из S3: {filename}, тип: {content_type}, размер: {len(file_content)} байт")
+    
+    try:
+        if content_type == "application/pdf":
+            # Обработка PDF файлов
+            logger.info("🔄 Обработка PDF файла...")
+            if not PYMUPDF_AVAILABLE:
+                logger.error("❌ PyMuPDF недоступен для обработки PDF")
+                raise HTTPException(
+                    status_code=400, 
+                    detail="PDF файлы не поддерживаются. PyMuPDF не установлен. Используйте DOCX или TXT файлы."
+                )
+            
+            pdf_document = fitz.open("pdf", file_content)
+            text = ""
+            for page_num in range(pdf_document.page_count):
+                page = pdf_document[page_num]
+                text += page.get_text()
+            pdf_document.close()
+            logger.info(f"✅ PDF обработан, извлечено {len(text)} символов")
+            return text
+            
+        elif content_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+            # Обработка Word документов
+            logger.info("🔄 Обработка Word документа...")
+            doc = Document(io.BytesIO(file_content))
+            text = ""
+            for paragraph in doc.paragraphs:
+                text += paragraph.text + "\n"
+            logger.info(f"✅ Word документ обработан, извлечено {len(text)} символов")
+            return text
+            
+        elif content_type == "text/plain":
+            # Обработка текстовых файлов
+            logger.info("🔄 Обработка текстового файла...")
+            try:
+                text = file_content.decode('utf-8')
+                logger.info(f"✅ Текстовый файл обработан (UTF-8), извлечено {len(text)} символов")
+                return text
+            except UnicodeDecodeError:
+                try:
+                    text = file_content.decode('cp1251')  # Кириллица Windows
+                    logger.info(f"✅ Текстовый файл обработан (CP1251), извлечено {len(text)} символов")
+                    return text
+                except UnicodeDecodeError:
+                    text = file_content.decode('latin-1')  # Fallback
+                    logger.info(f"✅ Текстовый файл обработан (Latin-1), извлечено {len(text)} символов")
+                    return text
+            
+        else:
+            supported_formats = ["TXT", "DOCX"]
+            if PYMUPDF_AVAILABLE:
+                supported_formats.insert(0, "PDF")
+            
+            logger.error(f"❌ Неподдерживаемый тип файла: {content_type}")
             raise HTTPException(
                 status_code=400, 
                 detail=f"Неподдерживаемый тип файла. Поддерживаются: {', '.join(supported_formats)}"
@@ -295,8 +365,27 @@ async def upload_document_and_generate_quiz(
         )
     
     try:
+        # Валидация размера файла (максимум 10MB)
+        if file.size > 10 * 1024 * 1024:
+            raise HTTPException(
+                status_code=400,
+                detail="Файл слишком большой. Максимальный размер: 10MB"
+            )
+        
+        # Валидация типа файла
+        allowed_types = [
+            "application/pdf",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "text/plain"
+        ]
+        if file.content_type not in allowed_types:
+            raise HTTPException(
+                status_code=400,
+                detail="Неподдерживаемый тип файла. Поддерживаются: PDF, DOCX, TXT"
+            )
+        
         logger.info("🔄 Извлечение текста из файла...")
-        # Извлекаем текст из файла
+        # Извлекаем текст из файла для анализа
         document_text = await extract_text_from_file(file)
         
         if len(document_text.strip()) < 100:
@@ -305,19 +394,36 @@ async def upload_document_and_generate_quiz(
         
         logger.info(f"✅ Текст извлечен, длина: {len(document_text)} символов")
         
-        logger.info("🗄️ Сохранение информации о документе в БД...")
-        # Сохраняем информацию о документе
+        # Сбрасываем указатель файла для загрузки в S3
+        await file.seek(0)
+        
+        logger.info("☁️ Загрузка файла в AWS S3...")
+        # Загружаем файл в S3
+        if not s3_service.is_available():
+            raise HTTPException(
+                status_code=500,
+                detail="S3 сервис недоступен. Проверьте настройки AWS."
+            )
+        
+        s3_metadata = await s3_service.upload_file(file, current_user.id)
+        logger.info(f"✅ Файл загружен в S3: {s3_metadata['s3_key']}")
+        
+        logger.info("🗄️ Сохранение метаданных документа в БД...")
+        # Сохраняем метаданные документа в MongoDB
         document_info = {
-            "filename": file.filename,
-            "content_type": file.content_type,
-            "size": file.size,
+            "s3_key": s3_metadata["s3_key"],
+            "s3_bucket": s3_metadata["s3_bucket"],
+            "s3_region": s3_metadata["s3_region"],
+            "original_filename": s3_metadata["original_filename"],
+            "content_type": s3_metadata["content_type"],
+            "file_size": s3_metadata["file_size"],
             "uploaded_by": current_user.id,
-            "uploaded_at": datetime.utcnow(),
+            "uploaded_at": s3_metadata["uploaded_at"],
             "text_length": len(document_text)
         }
         
         document_result = await db.documents.insert_one(document_info)
-        logger.info(f"✅ Документ сохранен в БД с ID: {document_result.inserted_id}")
+        logger.info(f"✅ Метаданные документа сохранены в БД с ID: {document_result.inserted_id}")
         
         logger.info("🤖 Генерация квиза с помощью GPT...")
         # Генерируем квиз с помощью GPT
@@ -337,15 +443,24 @@ async def upload_document_and_generate_quiz(
         logger.info(f"✅ Квиз успешно создан с ID: {quiz_result.inserted_id}")
         
         return {
-            "message": "Документ успешно загружен и квиз создан",
+            "message": "Документ успешно загружен в S3 и квиз создан",
             "document_id": str(document_result.inserted_id),
             "quiz_id": str(quiz_result.inserted_id),
+            "s3_key": s3_metadata["s3_key"],
             "quiz": quiz_data
         }
         
     except Exception as e:
         logger.error(f"❌ Общая ошибка при загрузке документа: {str(e)}")
         logger.error(f"❌ Трассировка: {traceback.format_exc()}")
+        
+        # Если ошибка произошла после загрузки в S3, пытаемся удалить файл
+        if 's3_metadata' in locals() and s3_metadata.get('s3_key'):
+            logger.info(f"🧹 Очистка: удаляем файл {s3_metadata['s3_key']} из S3")
+            await s3_service.delete_file(s3_metadata['s3_key'])
+        
+        if isinstance(e, HTTPException):
+            raise e
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/my-documents",
@@ -369,6 +484,19 @@ async def get_my_documents(current_user: User = Depends(get_current_user)):
             # Находим связанные квизы
             quizzes = await db.quizzes.find({"source_document_id": doc["id"]}).to_list(None)
             doc["generated_quizzes"] = len(quizzes)
+            
+            # Генерируем временную ссылку для скачивания (если S3 доступен)
+            if s3_service.is_available() and doc.get("s3_key"):
+                doc["download_url"] = s3_service.get_file_url(doc["s3_key"], expiration=3600)  # 1 час
+            else:
+                doc["download_url"] = None
+            
+            # Проверяем существование файла в S3
+            if doc.get("s3_key"):
+                metadata = await s3_service.get_file_metadata(doc["s3_key"])
+                doc["file_exists"] = metadata is not None
+            else:
+                doc["file_exists"] = False
             
             documents.append(doc)
         
@@ -430,15 +558,33 @@ async def delete_document(
         if not document:
             raise HTTPException(status_code=404, detail="Документ не найден или вы не являетесь его автором")
         
+        # Удаляем файл из S3 (если есть s3_key)
+        if document.get("s3_key") and s3_service.is_available():
+            logger.info(f"🗑️ Удаление файла {document['s3_key']} из S3...")
+            success = await s3_service.delete_file(document["s3_key"])
+            if success:
+                logger.info(f"✅ Файл {document['s3_key']} удален из S3")
+            else:
+                logger.warning(f"⚠️ Не удалось удалить файл {document['s3_key']} из S3")
+        
         # Удаляем связанные квизы
-        await db.quizzes.delete_many({"source_document_id": document_id})
+        deleted_quizzes = await db.quizzes.delete_many({"source_document_id": document_id})
+        logger.info(f"🗑️ Удалено {deleted_quizzes.deleted_count} связанных квизов")
         
-        # Удаляем документ
+        # Удаляем метаданные документа из MongoDB
         await db.documents.delete_one({"_id": ObjectId(document_id)})
+        logger.info(f"✅ Метаданные документа {document_id} удалены из БД")
         
-        return {"message": "Документ и связанные квизы успешно удалены"}
+        return {
+            "message": "Документ и связанные квизы успешно удалены",
+            "deleted_quizzes": deleted_quizzes.deleted_count,
+            "file_deleted_from_s3": document.get("s3_key") is not None
+        }
         
     except Exception as e:
+        logger.error(f"❌ Ошибка при удалении документа: {str(e)}")
+        if isinstance(e, HTTPException):
+            raise e
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/quiz-stats/{quiz_id}",
@@ -494,4 +640,55 @@ async def get_quiz_stats(
         }
         
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/download/{document_id}",
+           summary="Скачать документ [преподаватель]",
+           description="Возвращает временную ссылку для скачивания документа из S3")
+async def download_document(
+    document_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    # Проверяем, что пользователь - преподаватель
+    if not current_user.role or current_user.role not in ['teacher']:
+        raise HTTPException(
+            status_code=403, 
+            detail="Только преподаватели могут скачивать свои документы"
+        )
+    
+    try:
+        # Проверяем, что документ принадлежит текущему пользователю
+        document = await db.documents.find_one({
+            "_id": ObjectId(document_id),
+            "uploaded_by": current_user.id
+        })
+        
+        if not document:
+            raise HTTPException(status_code=404, detail="Документ не найден или вы не являетесь его автором")
+        
+        # Проверяем наличие S3 ключа
+        if not document.get("s3_key"):
+            raise HTTPException(status_code=404, detail="Файл не найден в системе хранения")
+        
+        # Проверяем доступность S3
+        if not s3_service.is_available():
+            raise HTTPException(status_code=500, detail="Сервис хранения файлов недоступен")
+        
+        # Генерируем временную ссылку для скачивания (действует 1 час)
+        download_url = s3_service.get_file_url(document["s3_key"], expiration=3600)
+        
+        if not download_url:
+            raise HTTPException(status_code=500, detail="Не удалось создать ссылку для скачивания")
+        
+        return {
+            "download_url": download_url,
+            "filename": document.get("original_filename", document.get("filename", "document")),
+            "expires_in": 3600,  # секунды
+            "file_size": document.get("file_size", document.get("size", 0))
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Ошибка при создании ссылки для скачивания: {str(e)}")
+        if isinstance(e, HTTPException):
+            raise e
         raise HTTPException(status_code=500, detail=str(e)) 

@@ -265,4 +265,50 @@ class QuizResultResponse(QuizResultBase):
     model_config = ConfigDict(
         from_attributes=True,
         extra='allow'
+    )
+
+# Document models for S3 storage
+class DocumentBase(BaseModel):
+    """Базовая модель для документов"""
+    original_filename: str
+    content_type: str
+    file_size: int
+    uploaded_by: str
+    uploaded_at: datetime = Field(default_factory=datetime.utcnow)
+
+    model_config = ConfigDict(
+        extra='allow'
+    )
+
+class DocumentS3(DocumentBase):
+    """Модель документа, хранящегося в S3"""
+    s3_key: str  # Уникальный ключ файла в S3
+    s3_bucket: str
+    s3_region: str
+    text_length: Optional[int] = None  # Длина извлеченного текста
+    
+    model_config = ConfigDict(
+        extra='allow'
+    )
+
+class DocumentDB(DocumentS3):
+    """Модель документа для MongoDB"""
+    id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
+    
+    model_config = ConfigDict(
+        populate_by_name=True,
+        arbitrary_types_allowed=True,
+        json_encoders={ObjectId: str},
+        extra='allow'
+    )
+
+class DocumentResponse(DocumentS3):
+    """Модель ответа с документом"""
+    id: str
+    generated_quizzes: Optional[int] = 0  # Количество созданных квизов
+    download_url: Optional[str] = None  # Временная ссылка для скачивания
+    
+    model_config = ConfigDict(
+        from_attributes=True,
+        extra='allow'
     ) 

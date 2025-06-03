@@ -204,3 +204,4 @@ async def delete_quiz(quiz_id: str = Path(..., description="ID теста для
         return {"message": "Тест успешно удален"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) 
+    
