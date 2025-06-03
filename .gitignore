@@ -8,4 +8,6 @@ __pycache__/
 venv/
 .env
 # .gitignore
-.env
+.envvenv/  
+backend/.venv/ 
+backend/.venv/ 
