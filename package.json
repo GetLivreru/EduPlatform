@@ -1,0 +1,28 @@
+{
+  "name": "eduplatform",
+  "version": "1.0.0",
+  "description": "Educational Platform with AI Quiz Generation",
+  "scripts": {
+    "build": "cd frontend && npm install && npm run build",
+    "dev": "concurrently \"cd backend && uvicorn main:app --reload\" \"cd frontend && npm run dev\"",
+    "install-frontend": "cd frontend && npm install",
+    "install-backend": "cd backend && pip install -r requirements.txt"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/eduplatform.git"
+  },
+  "keywords": [
+    "education",
+    "quiz",
+    "ai",
+    "fastapi",
+    "react",
+    "mongodb"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+} 

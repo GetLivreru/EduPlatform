@@ -29,12 +29,11 @@ import {
 const TeacherDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [documents, setDocuments] = useState<DocumentInfo[]>([]);
   const [quizzes, setQuizzes] = useState<TeacherQuiz[]>([]);
+  const [documents, setDocuments] = useState<DocumentInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [quizStats, setQuizStats] = useState<QuizStats | null>(null);
   const [activeTab, setActiveTab] = useState<'documents' | 'quizzes'>('documents');
-  const [selectedQuizStats, setSelectedQuizStats] = useState<QuizStats | null>(null);
-  const [statsLoading, setStatsLoading] = useState(false);
 
   // Check if user is teacher
   if (!user || user.role !== 'teacher') {
@@ -86,14 +85,11 @@ const TeacherDashboard: React.FC = () => {
 
   const handleViewQuizStats = async (quizId: string) => {
     try {
-      setStatsLoading(true);
       const stats = await getQuizStats(quizId);
-      setSelectedQuizStats(stats);
+      setQuizStats(stats);
     } catch (error) {
       console.error('Error loading quiz stats:', error);
       alert('Ошибка при загрузке статистики');
-    } finally {
-      setStatsLoading(false);
     }
   };
 
@@ -380,16 +376,16 @@ const TeacherDashboard: React.FC = () => {
       </div>
 
       {/* Quiz Stats Modal */}
-      {selectedQuizStats && (
+      {quizStats && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                  Статистика: {selectedQuizStats.quiz_title}
+                  Статистика: {quizStats.quiz_title}
                 </h2>
                 <button
-                  onClick={() => setSelectedQuizStats(null)}
+                  onClick={() => setQuizStats(null)}
                   className="text-gray-500 hover:text-gray-700 dark:text-gray-400 text-xl"
                 >
                   ✕
@@ -401,7 +397,7 @@ const TeacherDashboard: React.FC = () => {
                   <FaUsers className="mx-auto text-blue-600 dark:text-blue-400 mb-2" />
                   <p className="text-sm text-gray-600 dark:text-gray-400">Всего попыток</p>
                   <p className="text-xl font-bold text-blue-800 dark:text-blue-200">
-                    {selectedQuizStats.total_attempts}
+                    {quizStats.total_attempts}
                   </p>
                 </div>
                 
@@ -409,7 +405,7 @@ const TeacherDashboard: React.FC = () => {
                   <FaCheckCircle className="mx-auto text-green-600 dark:text-green-400 mb-2" />
                   <p className="text-sm text-gray-600 dark:text-gray-400">Завершено</p>
                   <p className="text-xl font-bold text-green-800 dark:text-green-200">
-                    {selectedQuizStats.completed_attempts}
+                    {quizStats.completed_attempts}
                   </p>
                 </div>
                 
@@ -417,7 +413,7 @@ const TeacherDashboard: React.FC = () => {
                   <FaTrophy className="mx-auto text-yellow-600 dark:text-yellow-400 mb-2" />
                   <p className="text-sm text-gray-600 dark:text-gray-400">Средний балл</p>
                   <p className="text-xl font-bold text-yellow-800 dark:text-yellow-200">
-                    {selectedQuizStats.average_score}%
+                    {quizStats.average_score}%
                   </p>
                 </div>
                 
@@ -425,12 +421,12 @@ const TeacherDashboard: React.FC = () => {
                   <FaPercent className="mx-auto text-purple-600 dark:text-purple-400 mb-2" />
                   <p className="text-sm text-gray-600 dark:text-gray-400">% завершения</p>
                   <p className="text-xl font-bold text-purple-800 dark:text-purple-200">
-                    {selectedQuizStats.completion_rate}%
+                    {quizStats.completion_rate}%
                   </p>
                 </div>
               </div>
 
-              {selectedQuizStats.total_attempts === 0 && (
+              {quizStats.total_attempts === 0 && (
                 <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                   <FaChartBar className="mx-auto text-4xl mb-2" />
                   <p>Пока нет попыток прохождения этого теста</p>

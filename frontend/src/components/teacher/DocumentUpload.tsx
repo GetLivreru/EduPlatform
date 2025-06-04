@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { uploadDocumentAndGenerateQuiz } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import { FaUpload, FaFileAlt, FaSpinner, FaCheckCircle, FaExclamationTriangle, FaRobot, FaBrain } from 'react-icons/fa';
+import { FaUpload, FaSpinner, FaCheckCircle, FaExclamationTriangle, FaRobot, FaBrain } from 'react-icons/fa';
 
 const DocumentUpload: React.FC = () => {
   const navigate = useNavigate();

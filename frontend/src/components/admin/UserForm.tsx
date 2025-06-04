@@ -32,7 +32,7 @@ const UserForm: React.FC<UserFormProps> = ({ user, onClose, onSuccess }) => {
                 setRoles(rolesData.roles);
             } catch (err) {
                 console.error('Error fetching roles:', err);
-                setError('Ошибка при загрузке ролей');
+                setError('Не удалось загрузить список ролей');
             } finally {
                 setRolesLoading(false);
             }
@@ -92,11 +92,6 @@ const UserForm: React.FC<UserFormProps> = ({ user, onClose, onSuccess }) => {
         } finally {
             setLoading(false);
         }
-    };
-
-    const getRoleDisplayName = (role: UserRole) => {
-        const roleObj = roles.find(r => r.value === role);
-        return roleObj ? roleObj.label : role;
     };
 
     const getRoleDescription = (role: UserRole) => {

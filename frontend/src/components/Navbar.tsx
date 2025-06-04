@@ -1,8 +1,8 @@
+import { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaUser, FaCog, FaMoon, FaSun, FaChalkboardTeacher, FaGraduationCap, FaRobot, FaBrain, FaChartLine } from 'react-icons/fa';
+import { FaUser, FaCog, FaMoon, FaSun, FaChalkboardTeacher, FaGraduationCap, FaRobot, FaBrain } from 'react-icons/fa';
 import { logout as apiLogout } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
 
 const Navbar = () => {
