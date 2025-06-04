@@ -127,7 +127,7 @@ const Quiz: React.FC = () => {
                 </div>
 
                 <div className="mb-8">
-                    <h2 className="text-xl font-semibold mb-4">{currentQuestionData.text}</h2>
+                    <h2 className="text-xl font-semibold mb-4">{currentQuestionData.text || currentQuestionData.question}</h2>
                     <div className="space-y-3">
                         {currentQuestionData.options.map((option: string, index: number) => (
                             <button

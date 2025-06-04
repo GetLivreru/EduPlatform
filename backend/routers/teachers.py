@@ -57,7 +57,8 @@ except FileNotFoundError:
 router = APIRouter()
 
 # MongoDB connection
-MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
+MONGODB_URL = os.getenv("MONGODB_URL", "mongodb+srv://Lida:oayjqe2005@cluster0.ejidejg.mongodb.net/?retryWrites=true&w=majority")
+
 logger.info(f"🗄️ MongoDB URL: {MONGODB_URL}")
 
 client = AsyncIOMotorClient(MONGODB_URL)

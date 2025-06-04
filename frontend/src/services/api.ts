@@ -52,7 +52,8 @@ export const getWelcomeMessage = async (): Promise<string> => {
 // Quiz related interfaces
 export interface Question {
     id?: string;
-    text: string;
+    text?: string;          // Для обычных квизов
+    question?: string;      // Для ИИ-сгенерированных квизов
     options: string[];
     correct_answer: number;
     explanation?: string;

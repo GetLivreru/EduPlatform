@@ -161,7 +161,7 @@ const QuizAttempt: React.FC = () => {
                         Question {currentQuestion + 1} of {quiz.questions.length}
                     </div>
                     <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
-                        {currentQuestionData.text}
+                        {currentQuestionData.text || currentQuestionData.question}
                     </h3>
 
                     <div className="space-y-3">

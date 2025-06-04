@@ -354,7 +354,7 @@ const AdminPanel: React.FC = () => {
                             <h3 className="text-lg font-semibold mb-2">Вопросы ({selectedQuiz.questions?.length || 0})</h3>
                             {selectedQuiz.questions?.map((question, index) => (
                                 <div key={index} className="mb-4 p-3 border rounded">
-                                    <p className="font-medium mb-2">{index + 1}. {question.text}</p>
+                                    <p className="font-medium mb-2">{index + 1}. {question.text || question.question}</p>
                                     <ul className="list-disc list-inside ml-4">
                                         {question.options.map((option, optionIndex) => (
                                             <li key={optionIndex} className={optionIndex === question.correct_answer ? 'text-green-600 font-medium' : ''}>

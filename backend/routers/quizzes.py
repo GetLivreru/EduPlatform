@@ -88,6 +88,16 @@ async def get_quiz(quiz_id: str = Path(..., description="ID теста для п
         quiz["id"] = str(quiz["_id"])
         del quiz["_id"]  # Удаляем _id, так как он уже преобразован в id
         
+        # Нормализуем структуру вопросов для совместимости
+        if "questions" in quiz and quiz["questions"]:
+            for question in quiz["questions"]:
+                # Если есть поле "question" но нет "text", копируем его
+                if "question" in question and "text" not in question:
+                    question["text"] = question["question"]
+                # Если есть поле "text" но нет "question", копируем его
+                elif "text" in question and "question" not in question:
+                    question["question"] = question["text"]
+        
         # Кэшируем квиз на 1 час
         await cache.cache_quiz(quiz_id, quiz, ttl=3600)
         print(f"💾 Квиз {quiz_id} сохранен в кэш")

@@ -1,5 +1,6 @@
 export interface Question {
-  text: string;
+  text?: string;          // Для обычных квизов
+  question?: string;      // Для ИИ-сгенерированных квизов
   options: string[];
   correct_answer: number;
 }

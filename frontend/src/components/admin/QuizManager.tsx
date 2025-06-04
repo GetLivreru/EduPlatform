@@ -4,7 +4,8 @@ import { FaTimes, FaPlus, FaSave, FaArrowLeft } from 'react-icons/fa';
 import { createQuiz, updateQuiz, getAdminQuiz } from '../../services/api';
 
 interface Question {
-    text: string;
+    text?: string;          // Для обычных квизов
+    question?: string;      // Для ИИ-сгенерированных квизов
     options: string[];
     correct_answer: number;
 }
@@ -148,7 +149,7 @@ const QuizManager: React.FC = () => {
         }
         
         const invalidQuestions = formData.questions.some(
-            (q) => !q.text.trim() || q.options.some((o) => !o.trim())
+            (q) => !q.text?.trim() || q.options.some((o) => !o.trim())
         );
         
         if (invalidQuestions) {
@@ -302,7 +303,7 @@ const QuizManager: React.FC = () => {
                                         <label className="block text-gray-700 font-semibold mb-2">Вопрос #{questionIndex + 1}</label>
                                         <input
                                             type="text"
-                                            value={question.text}
+                                            value={question.text || question.question || ''}
                                             onChange={(e) => handleQuestionChange(questionIndex, 'text', e.target.value)}
                                             className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                             placeholder="Текст вопроса"
