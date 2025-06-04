@@ -6,9 +6,9 @@ import os
 from dotenv import load_dotenv
 from datetime import datetime
 from pydantic import BaseModel, Field
-from middleware import get_current_user
-from models import UserInDB
-from ai_service import generate_learning_recommendations
+from ..middleware import get_current_user
+from ..models import UserInDB
+from ..ai_service import generate_learning_recommendations
 
 # Load .env from parent directory with encoding fallback
 env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')

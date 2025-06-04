@@ -3,7 +3,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Optional
 import jwt
 from datetime import datetime, timedelta
-from models import UserInDB, UserRole
+from .models import UserInDB, UserRole
 from motor.motor_asyncio import AsyncIOMotorClient
 from bson import ObjectId
 import os

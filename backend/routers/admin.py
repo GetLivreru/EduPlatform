@@ -6,7 +6,7 @@ import os
 from dotenv import load_dotenv
 from datetime import datetime
 from passlib.context import CryptContext
-from models import UserCreate, UserResponse, User, UserRole
+from ..models import UserCreate, UserResponse, User, UserRole
 
 # Load .env from parent directory with encoding fallback
 env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')

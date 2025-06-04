@@ -11,3 +11,4 @@ venv/
 .envvenv/  
 backend/.venv/ 
 backend/.venv/ 
+.vercel

@@ -3,14 +3,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 from fastapi.openapi.utils import get_openapi
 from motor.motor_asyncio import AsyncIOMotorClient
-from models import QuizBase, QuizQuestion, UserCreate, UserLogin, UserResponse, QuizDB, QuizResponse, UserInDB, QuizAttempt, UserRole
-from middleware import create_access_token, get_current_user, require_admin, require_teacher_or_admin
-from redis_cache import cache
+from .models import QuizBase, QuizQuestion, UserCreate, UserLogin, UserResponse, QuizDB, QuizResponse, UserInDB, QuizAttempt, UserRole
+from .middleware import create_access_token, get_current_user, require_admin, require_teacher_or_admin
+from .redis_cache import cache
 from datetime import datetime, timedelta
 from passlib.context import CryptContext
 from bson import ObjectId
 from typing import List
-from routers import quiz_attempts, quizzes, admin, teachers
+from .routers import quiz_attempts, quizzes, admin, teachers
 import os
 
 app = FastAPI(
