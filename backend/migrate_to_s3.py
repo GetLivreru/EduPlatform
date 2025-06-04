@@ -46,7 +46,7 @@ logger = logging.getLogger(__name__)
 class DocumentMigrator:
     def __init__(self):
         # MongoDB подключение
-        self.mongodb_url = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
+        self.mongodb_url = os.getenv("MONGODB_URL", "mongodb+srv://Lida:oayjqe2005@cluster0.ejidejg.mongodb.net/?retryWrites=true&w=majority")
         self.client = AsyncIOMotorClient(self.mongodb_url)
         self.db = self.client.LearnApp
         
