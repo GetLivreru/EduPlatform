@@ -24,15 +24,15 @@ except FileNotFoundError:
     pass
 
 SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-here")  # Берем из переменной окружения
-ALGORITHM = "HS256"
+ALGORITHM = "HS256" 
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+print(f"🔑 SECRET_KEY loaded: {'***' + SECRET_KEY[-4:] if len(SECRET_KEY) > 4 else 'NOT_SET'}")
 
 security = HTTPBearer()
 
-# MongoDB connection
-MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
-client = AsyncIOMotorClient(MONGODB_URL)
-db = client.LearnApp
+# MongoDB connection - используем централизованное подключение
+from .database import db
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()

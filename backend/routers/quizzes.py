@@ -25,10 +25,8 @@ except FileNotFoundError:
 
 router = APIRouter()
 
-# MongoDB connection
-MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
-client = AsyncIOMotorClient(MONGODB_URL)
-db = client.LearnApp
+# MongoDB connection - используем централизованное подключение
+from ..database import db
 
 @router.get("/api/quizzes", 
            response_model=List[QuizResponse],

@@ -22,12 +22,24 @@ app = FastAPI(
 )
 
 # Configure CORS
-cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
-cors_origins = [origin.strip() for origin in cors_origins]
+cors_origins_env = os.getenv("CORS_ORIGINS", "")
+if cors_origins_env:
+    cors_origins = [origin.strip() for origin in cors_origins_env.split(",") if origin.strip()]
+else:
+    cors_origins = []
 
-# Добавляем Vercel домен если он не указан
-if "https://edu-platform-five.vercel.app" not in cors_origins:
-    cors_origins.append("https://edu-platform-five.vercel.app")
+# Всегда добавляем необходимые домены
+required_origins = [
+    "https://edu-platform-five.vercel.app",
+    "http://localhost:5173",
+    "http://localhost:3000"
+]
+
+for origin in required_origins:
+    if origin not in cors_origins:
+        cors_origins.append(origin)
+
+print(f"🌐 CORS origins: {cors_origins}")
 
 app.add_middleware(
     CORSMiddleware,
@@ -37,10 +49,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# MongoDB connection
-MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
-client = AsyncIOMotorClient(MONGODB_URL)
-db = client.LearnApp
+# MongoDB connection - используем централизованное подключение
+from .database import client, db, MONGODB_URL
 
 # Collections
 quizzes_collection = db.quizzes
