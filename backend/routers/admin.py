@@ -6,7 +6,7 @@ import os
 from dotenv import load_dotenv
 from datetime import datetime
 from passlib.context import CryptContext
-from ..models import UserCreate, UserResponse, User, UserRole
+from models import UserCreate, UserResponse, User, UserRole
 
 # Load .env from parent directory with encoding fallback
 env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
@@ -26,7 +26,7 @@ router = APIRouter()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # MongoDB connection - используем централизованное подключение
-from ..database import get_database, MONGODB_URL
+from database import get_database, MONGODB_URL
 
 # User management endpoints
 @router.get("/users", 

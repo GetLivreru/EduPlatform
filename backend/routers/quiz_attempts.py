@@ -6,30 +6,18 @@ import os
 from dotenv import load_dotenv
 from datetime import datetime
 from pydantic import BaseModel, Field
-from ..middleware import get_current_user
-from ..models import UserInDB
-from ..ai_service import generate_learning_recommendations
-
-# Load .env from parent directory with encoding fallback
-env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
-try:
-    load_dotenv(env_path, encoding='utf-8')
-except UnicodeDecodeError:
-    try:
-        load_dotenv(env_path, encoding='utf-16')
-    except Exception:
-        # If all encoding attempts fail, continue without .env
-        pass
-except FileNotFoundError:
-    # .env file doesn't exist - continue with defaults
-    pass
+from middleware import get_current_user
+from models import UserInDB
+from ai_service import generate_learning_recommendations
 
 router = APIRouter()
 
-# MongoDB connection
-MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
-client = AsyncIOMotorClient(MONGODB_URL)
-db = client.LearnApp
+# MongoDB connection - используем централизованное подключение
+from database import get_database
+
+async def get_db():
+    """Helper function to get database instance"""
+    return await get_database()
 
 # Вспомогательная функция для сохранения рекомендаций
 async def generate_and_save_recommendations(
@@ -43,6 +31,7 @@ async def generate_and_save_recommendations(
     try:
         print(f"Starting background generation of recommendations for user {user_id}, quiz {quiz_id}")
         # Проверяем, есть ли уже рекомендации для этого пользователя и квиза
+        db = await get_db()
         existing_recommendation = await db.learning_recommendations.find_one({
             "user_id": user_id,
             "quiz_id": quiz_id
@@ -137,6 +126,7 @@ async def create_quiz_attempt(
         quiz_id = attempt_data.quiz_id
         
         # Проверяем существование теста
+        db = await get_db()
         quiz = await db.quizzes.find_one({"_id": ObjectId(quiz_id)})
         if not quiz:
             raise HTTPException(status_code=404, detail="Тест не найден")
@@ -171,6 +161,7 @@ async def submit_answer(
 ):
     try:
         # Get attempt
+        db = await get_db()
         attempt = await db.quiz_attempts.find_one({"_id": ObjectId(attempt_id)})
         if not attempt:
             raise HTTPException(status_code=404, detail="Attempt not found")
@@ -207,6 +198,7 @@ async def finish_quiz(
 ):
     try:
         # Get attempt
+        db = await get_db()
         attempt = await db.quiz_attempts.find_one({"_id": ObjectId(attempt_id)})
         if not attempt:
             raise HTTPException(status_code=404, detail="Attempt not found")
@@ -311,6 +303,7 @@ async def get_attempt(
     current_user: UserInDB = Depends(get_current_user)
 ):
     try:
+        db = await get_db()
         attempt = await db.quiz_attempts.find_one({"_id": ObjectId(attempt_id)})
         if not attempt:
             raise HTTPException(status_code=404, detail="Attempt not found")
@@ -337,6 +330,7 @@ async def get_user_quiz_results(
 ):
     try:
         # Получаем результаты квизов пользователя, сортируем по дате завершения (сначала новые)
+        db = await get_db()
         cursor = db.quiz_results.find({"user_id": current_user.id}).sort("completed_at", -1)
         
         # Преобразуем результаты в список
@@ -359,6 +353,7 @@ async def get_quiz_result(
 ):
     try:
         # Находим самый последний результат квиза для пользователя
+        db = await get_db()
         result = await db.quiz_results.find_one(
             {"quiz_id": quiz_id, "user_id": current_user.id},
             sort=[("completed_at", -1)]
@@ -367,15 +362,12 @@ async def get_quiz_result(
         if not result:
             raise HTTPException(status_code=404, detail="Результат квиза не найден")
             
-        # Преобразуем ObjectId в строку
         result["_id"] = str(result["_id"])
         
-        # Добавляем информацию о квизе
+        # Также получаем информацию о квизе
         quiz = await db.quizzes.find_one({"_id": ObjectId(quiz_id)})
         if quiz:
-            result["quiz_title"] = quiz["title"]
-            result["quiz_description"] = quiz["description"]
-            result["quiz_category"] = quiz["category"]
+            result["quiz_title"] = quiz.get("title", "Unknown Quiz")
             
         return result
     except Exception as e:
@@ -390,62 +382,38 @@ async def get_saved_recommendations(
     current_user: UserInDB = Depends(get_current_user)
 ):
     try:
-        # Ищем сохраненные рекомендации
-        recommendation = await db.learning_recommendations.find_one(
-            {"quiz_id": quiz_id, "user_id": current_user.id}
-        )
-        
-        if recommendation:
-            # Преобразуем ObjectId в строку
-            recommendation["_id"] = str(recommendation["_id"])
-            return recommendation
-            
-        # Если рекомендаций нет, генерируем их на лету
-        # Получаем информацию о квизе
-        quiz = await db.quizzes.find_one({"_id": ObjectId(quiz_id)})
-        if not quiz:
-            raise HTTPException(status_code=404, detail="Квиз не найден")
-            
-        # Получаем последний результат квиза для пользователя
-        result = await db.quiz_results.find_one(
-            {"quiz_id": quiz_id, "user_id": current_user.id},
-            sort=[("completed_at", -1)]
-        )
-        
-        if not result:
-            raise HTTPException(status_code=404, detail="Результат квиза не найден")
-            
-        # Генерируем рекомендации
-        recommendations = await generate_learning_recommendations(
-            subject=quiz.get("category", "General"),
-            level=quiz.get("difficulty", "Intermediate"),
-            quiz_results={"score": result.get("score", 0)},
-            incorrect_questions=result.get("incorrect_questions", [])
-        )
-        
-        if not recommendations:
-            raise HTTPException(status_code=500, detail="Не удалось сгенерировать рекомендации")
-            
-        # Сохраняем сгенерированные рекомендации для будущего использования
-        recommendation_doc = {
+        db = await get_db()
+        recommendation = await db.learning_recommendations.find_one({
             "user_id": current_user.id,
-            "quiz_id": quiz_id,
-            "subject": quiz.get("category", "General"),
-            "level": quiz.get("difficulty", "Intermediate"),
-            "weak_areas": recommendations.get("weak_areas", []),
-            "learning_resources": recommendations.get("learning_resources", []),
-            "practice_exercises": recommendations.get("practice_exercises", []),
-            "study_schedule": recommendations.get("study_schedule", []),
-            "expected_outcomes": recommendations.get("expected_outcomes", []),
-            "created_at": datetime.utcnow()
-        }
+            "quiz_id": quiz_id
+        })
         
-        result = await db.learning_recommendations.insert_one(recommendation_doc)
-        recommendation_doc["_id"] = str(result.inserted_id)
+        if not recommendation:
+            # Проверяем, есть ли квиз
+            quiz = await db.quizzes.find_one({"_id": ObjectId(quiz_id)})
+            if not quiz:
+                raise HTTPException(status_code=404, detail="Квиз не найден")
+            
+            # Проверяем, есть ли результат квиза
+            result = await db.quiz_results.find_one(
+                {"quiz_id": quiz_id, "user_id": current_user.id},
+                sort=[("completed_at", -1)]
+            )
+            
+            if not result:
+                raise HTTPException(status_code=404, detail="Результат квиза не найден")
+            
+            raise HTTPException(status_code=404, detail="Рекомендации не найдены")
+            
+        # Удаляем системные поля
+        recommendation.pop("_id", None)
+        recommendation.pop("user_id", None)
+        recommendation.pop("quiz_id", None)
         
-        return recommendation_doc
+        return recommendation
+    except HTTPException:
+        raise
     except Exception as e:
-        print(f"Error fetching recommendations: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/learning-recommendations")
@@ -457,54 +425,11 @@ async def get_learning_recommendations(
     quiz_results: str = Form(...),  # строка, т.к. приходит JSON
     incorrect_questions: str = Form(...)  # строка, т.к. приходит JSON
 ):
-    import json
-    print(f"Received learning recommendations request for subject: {subject}, level: {level}")
     try:
-        # Проверяем, что строки не пустые
-        quiz_results_data = json.loads(quiz_results) if quiz_results.strip() else {}
-        incorrect_questions_data = json.loads(incorrect_questions) if incorrect_questions.strip() else []
-    
-        print(f"Parsed quiz_results: {quiz_results_data}")
-        print(f"Parsed incorrect_questions ({len(incorrect_questions_data)} items)")
-        
-        # Если в запросе указан quiz_id и user_id, пытаемся получить сохраненные рекомендации
-        quiz_id = quiz_results_data.get("quiz_id")
-        user_id = quiz_results_data.get("user_id")
-        
-        if quiz_id and user_id:
-            recommendation = await db.learning_recommendations.find_one(
-                {"quiz_id": quiz_id, "user_id": user_id}
-            )
-            
-            if recommendation:
-                # Если есть сохраненные рекомендации, возвращаем их
-                recommendation["_id"] = str(recommendation["_id"])
-                print(f"Returning saved recommendations for user {user_id}, quiz {quiz_id}")
-                return recommendation
-        
-        # Если данных недостаточно, возвращаем базовые рекомендации
-        if not quiz_results_data or not incorrect_questions_data:
-            print("Insufficient data, returning default recommendations")
-            return {
-                "message": "Недостаточно данных для детальных рекомендаций",
-                "weak_areas": ["Общие темы"],
-                "learning_resources": [
-                    {"title": "Базовый материал по предмету", "url": "https://www.coursera.org/"}
-                ],
-                "practice_exercises": [
-                    "Начните с изучения базовых концепций",
-                    "Решите простые задачи для закрепления материала"
-                ],
-                "study_schedule": [
-                    {"day": "День 1", "tasks": ["Ознакомление с предметом"]},
-                    {"day": "День 2", "tasks": ["Изучение основных понятий"]},
-                    {"day": "День 3", "tasks": ["Практика"]}
-                ],
-                "expected_outcomes": [
-                    "Понимание базовых концепций",
-                    "Подготовка к более сложным темам"
-                ]
-            }
+        import json
+        # Парсим JSON данные
+        quiz_results_data = json.loads(quiz_results)
+        incorrect_questions_data = json.loads(incorrect_questions)
         
         # Генерируем рекомендации
         recommendations = await generate_learning_recommendations(
@@ -514,46 +439,45 @@ async def get_learning_recommendations(
             incorrect_questions=incorrect_questions_data
         )
         
-        # Если есть quiz_id и user_id, сохраняем рекомендации в базу данных
-        if quiz_id and user_id and recommendations:
-            # Сохраняем рекомендации в фоновом режиме
-            background_tasks.add_task(
-                generate_and_save_recommendations,
-                quiz_id=quiz_id,
-                user_id=user_id,
-                subject=subject,
-                level=level,
-                score=quiz_results_data.get("score", 0),
-                incorrect_questions=incorrect_questions_data
-            )
-            
-        if not recommendations:
-            raise HTTPException(status_code=500, detail="Не удалось сгенерировать рекомендации")
-            
+        # Сохраняем рекомендации в БД для будущего использования
+        db = await get_db()
+        recommendation_doc = {
+            "subject": subject,
+            "level": level,
+            "weak_areas": recommendations.get("weak_areas", []),
+            "learning_resources": recommendations.get("learning_resources", []),
+            "practice_exercises": recommendations.get("practice_exercises", []),
+            "study_schedule": recommendations.get("study_schedule", []),
+            "expected_outcomes": recommendations.get("expected_outcomes", []),
+            "created_at": datetime.utcnow()
+        }
+        
+        result = await db.learning_recommendations.insert_one(recommendation_doc)
+        
         return recommendations
     except json.JSONDecodeError:
-        # В случае ошибки разбора JSON, возвращаем базовые рекомендации
-        print("JSON parsing error, returning default recommendations")
-        return {
-            "message": "Ошибка при разборе данных",
-            "weak_areas": ["Общие темы"],
-            "learning_resources": [
-                {"title": "Базовый материал по предмету", "url": "https://www.coursera.org/"}
-            ],
-            "practice_exercises": [
-                "Начните с изучения базовых концепций",
-                "Решите простые задачи для закрепления материала"
-            ],
-            "study_schedule": [
-                {"day": "День 1", "tasks": ["Ознакомление с предметом"]},
-                {"day": "День 2", "tasks": ["Изучение основных понятий"]},
-                {"day": "День 3", "tasks": ["Практика"]}
-            ],
-            "expected_outcomes": [
-                "Понимание базовых концепций",
-                "Подготовка к более сложным темам"
-            ]
-        }
+        raise HTTPException(status_code=400, detail="Неверный формат JSON данных")
     except Exception as e:
-        print(f"Error generating learning recommendations: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Ошибка генерации рекомендаций: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Ошибка при генерации рекомендаций: {str(e)}")
+
+# Endpoint для получения рекомендаций по ID
+@router.get("/recommendations/by-id/{recommendation_id}")
+async def get_recommendation_by_id(
+    recommendation_id: str = Path(..., description="ID рекомендации"),
+    current_user: UserInDB = Depends(get_current_user)
+):
+    try:
+        db = await get_db()
+        recommendation = await db.learning_recommendations.find_one(
+            {"_id": ObjectId(recommendation_id)}
+        )
+        
+        if not recommendation:
+            raise HTTPException(status_code=404, detail="Рекомендация не найдена")
+            
+        # Конвертируем ObjectId в строку
+        recommendation["_id"] = str(recommendation["_id"])
+        
+        return recommendation
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
