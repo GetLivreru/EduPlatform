@@ -30,6 +30,7 @@
 - [🧪 Тестирование](#-тестирование)
 - [🚢 Деплой](#-деплой)
 - [🤝 Участие в разработке](#-участие-в-разработке)
+- [📚 Дополнительная документация](#-дополнительная-документация)
 - [📄 Лицензия](#-лицензия)
 
 ## ✨ Особенности
@@ -66,6 +67,12 @@
 - **Smart Recommendations** - персональные советы по изучению материала
 - **Adaptive Learning** - автоматическая настройка сложности
 - **Content Analysis** - извлечение ключевых тем из документов
+
+### ⚡ **Производительность**
+- **Redis Caching** - кеширование пользовательских сессий и данных квизов
+- **Fast Response** - молниеносная загрузка благодаря оптимизированному кешу
+- **Session Management** - надежное управление сессиями пользователей
+- **Rate Limiting** - защита от спама и DDoS атак
 
 ## 🏗️ Архитектура
 
@@ -122,6 +129,7 @@ graph TB
 | **Quiz Engine** | Python + AI | Генерация и обработка квизов |
 | **File Processor** | PyMuPDF + python-docx | Извлечение текста из документов |
 | **AI Service** | OpenAI API | Генерация контента и рекомендаций |
+| **Cache Service** | Redis | Кеширование данных и сессий |
 | **Storage Service** | AWS S3 | Хранение файлов и медиа |
 | **Database** | MongoDB Atlas | Основное хранилище данных |
 
@@ -133,6 +141,7 @@ graph TB
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=FastAPI&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white)
 ![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=flat-square&logo=mongodb&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-DC382D?style=flat-square&logo=redis&logoColor=white)
 ![AWS](https://img.shields.io/badge/AWS-232F3E?style=flat-square&logo=amazon-aws&logoColor=white)
 
 ### **Frontend Stack**
@@ -158,6 +167,7 @@ graph TB
 ```python
 fastapi>=0.104.0          # Современный веб-фреймворк
 motor>=3.3.0              # Async MongoDB драйвер
+redis>=5.0.0              # Redis клиент для кеширования
 pydantic>=2.4.0           # Валидация данных
 python-jose>=3.3.0        # JWT токены
 bcrypt>=4.0.0             # Хеширование паролей
@@ -191,6 +201,7 @@ Python 3.9+
 Node.js 16+
 Git
 MongoDB (Atlas или локальный)
+Redis (для кеширования)
 AWS аккаунт (для S3)
 OpenAI API ключ
 ```
@@ -279,6 +290,13 @@ docker-compose logs -f
 
 Приложение будет доступно на http://localhost:3000
 
+**🔧 Включенные сервисы:**
+- 🖥️ **Frontend** (React) - http://localhost:3000
+- 🐍 **Backend** (FastAPI) - http://localhost:8000
+- 🗄️ **MongoDB** - localhost:27017
+- 🔄 **Redis** - localhost:6379
+- 📊 **Mongo Express** (DB Admin) - http://localhost:8081
+
 </details>
 
 ## ⚙️ Конфигурация
@@ -306,6 +324,10 @@ AWS_ACCESS_KEY_ID=your-aws-access-key
 AWS_SECRET_ACCESS_KEY=your-aws-secret-key
 AWS_REGION=us-east-1
 S3_BUCKET_NAME=eduplatform-files
+
+# 🔄 Redis настройки
+REDIS_URL=redis://localhost:6379
+REDIS_TTL=3600
 
 # 🌐 CORS настройки
 ALLOWED_ORIGINS=http://localhost:3000,https://yourdomain.com
@@ -669,6 +691,25 @@ git push origin feature/amazing-feature
 - **Frontend**: ESLint, Prettier, TypeScript
 - **Commits**: [Conventional Commits](https://conventionalcommits.org/)
 - **Documentation**: Docstrings для всех функций
+
+## 📚 Дополнительная документация
+
+### 📖 Техническая документация
+- 🔄 **[Кеширование с Redis](docs/CACHING.md)** - полное руководство по кешированию
+- 🤖 **[AI Integration](docs/AI_INTEGRATION.md)** - интеграция с OpenAI GPT-4
+- 🗄️ **[Database Schema](docs/DATABASE.md)** - схема базы данных MongoDB
+- 🔒 **[Security Guide](docs/SECURITY.md)** - рекомендации по безопасности
+- 📊 **[Monitoring](docs/MONITORING.md)** - мониторинг и логирование
+
+### 🎯 Руководства пользователя
+- 👨‍🏫 **[Teacher Guide](docs/TEACHER_GUIDE.md)** - руководство для преподавателей
+- 👨‍🎓 **[Student Guide](docs/STUDENT_GUIDE.md)** - руководство для студентов
+- 🔧 **[Admin Guide](docs/ADMIN_GUIDE.md)** - руководство администратора
+
+### 🔧 Разработка
+- 🏗️ **[Architecture](docs/ARCHITECTURE.md)** - детальная архитектура системы
+- ⚡ **[Performance](docs/PERFORMANCE.md)** - оптимизация производительности
+- 🧪 **[Testing Strategy](docs/TESTING.md)** - стратегия тестирования
 
 ## 📄 Лицензия
 
