@@ -26,7 +26,7 @@ except FileNotFoundError:
 router = APIRouter()
 
 # MongoDB connection - используем централизованное подключение
-from ..database import db
+from ..database import get_database
 
 @router.get("/api/quizzes", 
            response_model=List[QuizResponse],
@@ -48,6 +48,7 @@ async def get_quizzes():
 
         # Если нет в кэше, получаем из БД
         print("🔍 Fetching quizzes from MongoDB...")
+        db = await get_database()
         quizzes = []
         cursor = db.quizzes.find()
         async for quiz_doc in cursor:
@@ -91,6 +92,7 @@ async def get_quiz(quiz_id: str = Path(..., description="ID теста для п
             return cached_quiz
 
         # Если нет в кэше, получаем из БД
+        db = await get_database()
         quiz = await db.quizzes.find_one({"_id": ObjectId(quiz_id)})
         if not quiz:
             raise HTTPException(status_code=404, detail="Тест не найден")
@@ -146,6 +148,7 @@ async def create_quiz(
             "updated_at": datetime.utcnow()
         }
         
+        db = await get_database()
         result = await db.quizzes.insert_one(quiz)
         quiz["id"] = str(result.inserted_id)
         
@@ -189,6 +192,7 @@ async def update_quiz(
         
         update_data["updated_at"] = datetime.utcnow()
         
+        db = await get_database()
         result = await db.quizzes.update_one(
             {"_id": ObjectId(quiz_id)},
             {"$set": update_data}
@@ -214,6 +218,7 @@ async def update_quiz(
               tags=["quizzes-admin"])
 async def delete_quiz(quiz_id: str = Path(..., description="ID теста для удаления")):
     try:
+        db = await get_database()
         result = await db.quizzes.delete_one({"_id": ObjectId(quiz_id)})
         if result.deleted_count == 0:
             raise HTTPException(status_code=404, detail="Тест не найден")

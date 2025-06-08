@@ -26,7 +26,7 @@ router = APIRouter()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # MongoDB connection - используем централизованное подключение
-from ..database import db, MONGODB_URL
+from ..database import get_database, MONGODB_URL
 
 # User management endpoints
 @router.get("/users", 
@@ -37,6 +37,7 @@ async def get_users():
         print(f"🔍 Admin endpoint: Attempting to fetch users from MongoDB")
         print(f"🔗 MongoDB URL: {MONGODB_URL[:50]}...")  # Log partial URL for debugging
         
+        db = await get_database()
         users = []
         cursor = db.users.find({}, {"password": 0})  # Exclude passwords
         async for user in cursor:
@@ -57,6 +58,7 @@ async def get_users():
 async def create_user(user: UserCreate):
     try:
         # Проверяем, существует ли пользователь с таким email
+        db = await get_database()
         existing_user = await db.users.find_one({"login": user.login})
         if existing_user:
             raise HTTPException(status_code=400, detail="Пользователь с таким email уже существует")

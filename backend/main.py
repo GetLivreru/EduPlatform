@@ -179,7 +179,8 @@ async def health_check():
          tags=["аутентификация"])
 async def register(user: UserCreate):
     # Проверяем, существует ли уже пользователь
-    existing_user = await users_collection.find_one({"login": user.login})
+    db = await get_database()
+    existing_user = await db.users.find_one({"login": user.login})
     if existing_user:
         raise HTTPException(status_code=400, detail="Пользователь с таким email уже существует")
     
@@ -193,8 +194,8 @@ async def register(user: UserCreate):
     user_dict["role"] = user.role.value
     
     # Сохраняем пользователя
-    result = await users_collection.insert_one(user_dict)
-    created_user = await users_collection.find_one({"_id": result.inserted_id})
+    result = await db.users.insert_one(user_dict)
+    created_user = await db.users.find_one({"_id": result.inserted_id})
     
     # Преобразуем _id в строку для правильной сериализации
     created_user["id"] = str(created_user["_id"])
@@ -209,7 +210,8 @@ async def register(user: UserCreate):
          tags=["аутентификация"])
 async def login(user: UserLogin):
     # Находим пользователя
-    db_user = await users_collection.find_one({"login": user.login})
+    db = await get_database()
+    db_user = await db.users.find_one({"login": user.login})
     if not db_user or not pwd_context.verify(user.password, db_user["password"]):
         raise HTTPException(status_code=401, detail="Неверный email или пароль")
     

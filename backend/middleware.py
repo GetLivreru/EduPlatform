@@ -32,7 +32,7 @@ print(f"🔑 SECRET_KEY loaded: {'***' + SECRET_KEY[-4:] if len(SECRET_KEY) > 4 
 security = HTTPBearer()
 
 # MongoDB connection - используем централизованное подключение
-from .database import db
+from .database import get_database
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
@@ -58,6 +58,7 @@ async def get_current_user(request: Request) -> UserInDB:
         raise HTTPException(status_code=401, detail="Не авторизован")
     
     # Получаем пользователя из базы данных
+    db = await get_database()
     user_doc = await db.users.find_one({"_id": ObjectId(user_id)})
     if not user_doc:
         raise HTTPException(status_code=401, detail="Пользователь не найден")
@@ -129,6 +130,7 @@ async def optional_auth(request: Request):
             return None
         
         # Получаем пользователя из базы данных
+        db = await get_database()
         user_doc = await db.users.find_one({"_id": ObjectId(user_id)})
         if not user_doc:
             return None
