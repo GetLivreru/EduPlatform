@@ -37,13 +37,19 @@ db = client.LearnApp
            tags=["quizzes"])
 async def get_quizzes():
     try:
+        print("🔍 Public endpoint: Attempting to fetch quizzes")
+        
         # Сначала пробуем получить из кэша
-        cached_quizzes = await cache.get_quizzes_list()
-        if cached_quizzes:
-            print("📦 Список квизов получен из кэша")
-            return cached_quizzes
+        try:
+            cached_quizzes = await cache.get_quizzes_list()
+            if cached_quizzes:
+                print("📦 Список квизов получен из кэша")
+                return cached_quizzes
+        except Exception as cache_error:
+            print(f"⚠️ Cache error (continuing without cache): {cache_error}")
 
         # Если нет в кэше, получаем из БД
+        print("🔍 Fetching quizzes from MongoDB...")
         quizzes = []
         cursor = db.quizzes.find()
         async for quiz_doc in cursor:
@@ -53,14 +59,21 @@ async def get_quizzes():
                 del quiz_doc["_id"]  # Удаляем _id, так как он уже преобразован в id
                 quizzes.append(quiz_doc)
             except Exception as e:
+                print(f"⚠️ Error processing quiz document: {e}")
                 continue
         
+        print(f"✅ Successfully fetched {len(quizzes)} quizzes from MongoDB")
+        
         # Кэшируем результат на 10 минут
-        await cache.cache_quizzes_list(quizzes, ttl=600)
-        print(f"💾 Список квизов ({len(quizzes)} шт.) сохранен в кэш")
+        try:
+            await cache.cache_quizzes_list(quizzes, ttl=600)
+            print(f"💾 Список квизов ({len(quizzes)} шт.) сохранен в кэш")
+        except Exception as cache_error:
+            print(f"⚠️ Cache save error (continuing): {cache_error}")
         
         return quizzes
     except Exception as e:
+        print(f"❌ Error in get_quizzes: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail=f"Failed to fetch quizzes: {str(e)}"

@@ -23,7 +23,7 @@ except FileNotFoundError:
     # .env file doesn't exist - continue with defaults
     pass
 
-SECRET_KEY = "your-secret-key-here"  # В реальном приложении используйте безопасный ключ
+SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-here")  # Берем из переменной окружения
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
