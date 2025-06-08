@@ -50,7 +50,7 @@ app.add_middleware(
 )
 
 # MongoDB connection - используем централизованное подключение
-from .database import client, db, MONGODB_URL
+from .database import client, db, MONGODB_URL, get_client, get_database
 
 # Collections
 quizzes_collection = db.quizzes
@@ -68,7 +68,7 @@ async def startup_event():
     """Инициализация при запуске приложения"""
     # Проверяем подключение к MongoDB
     try:
-        await client.admin.command('ping')
+        mongodb_client = await get_client()
         print("✅ MongoDB подключена успешно")
         print(f"🔗 MongoDB URL: {MONGODB_URL[:50]}...")
     except Exception as e:
@@ -143,12 +143,16 @@ async def health_check():
     
     # Проверяем MongoDB
     try:
-        await client.admin.command('ping')
+        mongodb_client = await get_client()
+        mongodb_db = await get_database()
+        
+        # Проверяем подключение
+        await mongodb_client.admin.command('ping')
         status["services"]["mongodb"] = "healthy"
         
         # Проверяем количество пользователей и квизов
-        users_count = await db.users.count_documents({})
-        quizzes_count = await db.quizzes.count_documents({})
+        users_count = await mongodb_db.users.count_documents({})
+        quizzes_count = await mongodb_db.quizzes.count_documents({})
         status["data"] = {
             "users_count": users_count,
             "quizzes_count": quizzes_count
