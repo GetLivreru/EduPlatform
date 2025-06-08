@@ -22,9 +22,16 @@ app = FastAPI(
 )
 
 # Configure CORS
+cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
+cors_origins = [origin.strip() for origin in cors_origins]
+
+# Добавляем Vercel домен если он не указан
+if "https://edu-platform-five.vercel.app" not in cors_origins:
+    cors_origins.append("https://edu-platform-five.vercel.app")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Vite default port
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -49,6 +56,14 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 @app.on_event("startup")
 async def startup_event():
     """Инициализация при запуске приложения"""
+    # Проверяем подключение к MongoDB
+    try:
+        await client.admin.command('ping')
+        print("✅ MongoDB подключена успешно")
+        print(f"🔗 MongoDB URL: {MONGODB_URL[:50]}...")
+    except Exception as e:
+        print(f"❌ Ошибка подключения к MongoDB: {e}")
+    
     # Подключаем Redis
     await cache.connect()
     print("🚀 Приложение запущено")
@@ -101,6 +116,47 @@ async def get_open_api_endpoint():
         tags=["статус"])
 async def root():
     return {"message": "Welcome to Educational Quiz Platform API"}
+
+@app.get("/api/health",
+        summary="Проверка состояния сервисов",
+        description="Возвращает статус подключения к базе данных и другим сервисам",
+        tags=["статус"])
+async def health_check():
+    status = {
+        "api": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "services": {
+            "mongodb": "unknown",
+            "redis": "unknown"
+        }
+    }
+    
+    # Проверяем MongoDB
+    try:
+        await client.admin.command('ping')
+        status["services"]["mongodb"] = "healthy"
+        
+        # Проверяем количество пользователей и квизов
+        users_count = await db.users.count_documents({})
+        quizzes_count = await db.quizzes.count_documents({})
+        status["data"] = {
+            "users_count": users_count,
+            "quizzes_count": quizzes_count
+        }
+    except Exception as e:
+        status["services"]["mongodb"] = f"error: {str(e)}"
+    
+    # Проверяем Redis
+    try:
+        if cache.redis_client:
+            await cache.redis_client.ping()
+            status["services"]["redis"] = "healthy"
+        else:
+            status["services"]["redis"] = "not_configured"
+    except Exception as e:
+        status["services"]["redis"] = f"error: {str(e)}"
+    
+    return status
 
 @app.post("/api/register", 
          response_model=UserResponse,

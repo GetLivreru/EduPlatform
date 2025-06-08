@@ -36,15 +36,21 @@ db = client.LearnApp
             description="Возвращает список всех пользователей (требуются права администратора)")
 async def get_users():
     try:
+        print(f"🔍 Admin endpoint: Attempting to fetch users from MongoDB")
+        print(f"🔗 MongoDB URL: {MONGODB_URL[:50]}...")  # Log partial URL for debugging
+        
         users = []
         cursor = db.users.find({}, {"password": 0})  # Exclude passwords
         async for user in cursor:
             user["id"] = str(user["_id"])
             del user["_id"]
             users.append(user)
+        
+        print(f"✅ Successfully fetched {len(users)} users")
         return users
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"❌ Error fetching users: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 @router.post("/users",
             response_model=UserResponse,
@@ -273,14 +279,17 @@ async def get_quiz_stats():
            response_description="Массив тестов")
 async def get_quizzes():
     try:
+        print(f"🔍 Admin endpoint: Attempting to fetch quizzes from MongoDB")
         quizzes = await db.quizzes.find().to_list(None)
         # Convert ObjectId to string for JSON serialization 
         for quiz in quizzes:
             quiz["_id"] = str(quiz["_id"])
         
+        print(f"✅ Successfully fetched {len(quizzes)} quizzes")
         return quizzes
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"❌ Error fetching quizzes: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 @router.get("/quizzes/{quiz_id}",
            summary="Получить тест",

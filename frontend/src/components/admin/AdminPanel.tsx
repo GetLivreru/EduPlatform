@@ -36,20 +36,29 @@ const AdminPanel: React.FC = () => {
         const fetchData = async () => {
             try {
                 setLoading(true);
+                setError(null); // Очищаем предыдущие ошибки
+                
                 if (activeTab === 'quizzes') {
+                    console.log('🔍 Загружаем квизы для админ панели...');
                     const quizzesData = await getAdminQuizzes();
                     setQuizzes(quizzesData);
+                    console.log(`✅ Загружено ${quizzesData.length} квизов`);
                 } else {
+                    console.log('🔍 Загружаем пользователей для админ панели...');
                     if (selectedRole === 'all') {
                         const usersData = await getUsers();
                         setUsers(usersData);
+                        console.log(`✅ Загружено ${usersData.length} пользователей`);
                     } else {
                         const roleUsersData = await getUsersByRole(selectedRole);
                         setUsers(roleUsersData.users);
+                        console.log(`✅ Загружено ${roleUsersData.users.length} пользователей с ролью ${selectedRole}`);
                     }
                 }
-            } catch (err) {
-                setError('Ошибка при загрузке данных');
+            } catch (err: any) {
+                console.error('❌ Ошибка загрузки данных в админ панели:', err);
+                const errorMessage = err.response?.data?.detail || err.message || 'Неизвестная ошибка';
+                setError(`Ошибка при загрузке ${activeTab === 'quizzes' ? 'квизов' : 'пользователей'}: ${errorMessage}`);
             } finally {
                 setLoading(false);
             }

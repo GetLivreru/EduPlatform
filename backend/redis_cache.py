@@ -24,7 +24,7 @@ class RedisCache:
             await self.redis_client.ping()
             print("✅ Redis подключен успешно")
         except Exception as e:
-            print(f"❌ Ошибка подключения к Redis: {e}")
+            print(f"⚠️ Redis недоступен, работаем без кэширования: {e}")
             self.redis_client = None
     
     async def disconnect(self):
