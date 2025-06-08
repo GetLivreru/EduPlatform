@@ -1,0 +1,82 @@
+# 📁 Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# 📊 Testing & Coverage
+.coverage
+.pytest_cache/
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+
+# 🔧 Development
+.env
+.env.local
+.env.*.local
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 📝 Logs
+*.log
+logs/
+
+# 🗄️ Database
+*.db
+*.sqlite3
+
+# 📦 Build artifacts
+build/
+dist/
+*.egg-info/
+
+# 🔒 Security
+.env.production
+secrets/
+private_keys/
+
+# 📚 Documentation
+docs/_build/
+
+# 🐳 Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# 🔄 Version control
+.git/
+.gitignore
+README.md
+CHANGELOG.md
+
+# 📋 OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# 🧪 Testing files
+tests/
+test_*.py
+*_test.py
+
+# 📊 Monitoring & Analytics
+.monitoring/
+.analytics/ 
