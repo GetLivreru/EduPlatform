@@ -94,6 +94,7 @@ async def update_user(
 ):
     try:
         # Проверяем существование пользователя
+        db = await get_database()
         existing_user = await db.users.find_one({"_id": ObjectId(user_id)})
         if not existing_user:
             raise HTTPException(status_code=404, detail="Пользователь не найден")
@@ -151,6 +152,7 @@ async def update_user(
               description="Удаляет пользователя из системы (требуются права администратора)")
 async def delete_user(user_id: str):
     try:
+        db = await get_database()
         result = await db.users.delete_one({"_id": ObjectId(user_id)})
         if result.deleted_count == 0:
             raise HTTPException(status_code=404, detail="Пользователь не найден")
@@ -183,6 +185,7 @@ async def create_quiz(
             "updated_at": datetime.utcnow()
         }
         
+        db = await get_database()
         result = await db.quizzes.insert_one(quiz)
         quiz["_id"] = str(result.inserted_id)
         
@@ -221,6 +224,7 @@ async def update_quiz(
         if questions is not None:
             update_data["questions"] = questions
 
+        db = await get_database()
         result = await db.quizzes.update_one(
             {"_id": ObjectId(quiz_id)},
             {"$set": update_data}
@@ -242,6 +246,7 @@ async def update_quiz(
               response_description="Статус операции")
 async def delete_quiz(quiz_id: str = Path(..., description="ID теста для удаления")):
     try:
+        db = await get_database()
         result = await db.quizzes.delete_one({"_id": ObjectId(quiz_id)})
         
         if result.deleted_count == 0:
@@ -257,6 +262,7 @@ async def delete_quiz(quiz_id: str = Path(..., description="ID теста для
            response_description="Статистика по категориям и сложности")
 async def get_quiz_stats():
     try:
+        db = await get_database()
         total_quizzes = await db.quizzes.count_documents({})
         quizzes_by_category = await db.quizzes.aggregate([
             {"$group": {"_id": "$category", "count": {"$sum": 1}}}
@@ -280,6 +286,7 @@ async def get_quiz_stats():
 async def get_quizzes():
     try:
         print(f"🔍 Admin endpoint: Attempting to fetch quizzes from MongoDB")
+        db = await get_database()
         quizzes = await db.quizzes.find().to_list(None)
         # Convert ObjectId to string for JSON serialization 
         for quiz in quizzes:
@@ -298,6 +305,7 @@ async def get_quizzes():
 async def get_quiz(quiz_id: str = Path(..., description="ID теста для получения")):
     try:
         print(f"Admin endpoint: Attempting to fetch quiz with ID: {quiz_id}")
+        db = await get_database()
         quiz = await db.quizzes.find_one({"_id": ObjectId(quiz_id)})
         if not quiz:
             raise HTTPException(status_code=404, detail="Quiz not found")
@@ -355,6 +363,7 @@ async def get_users_by_role(role: str = Path(..., description="Роль поль
         except ValueError:
             raise HTTPException(status_code=400, detail="Недопустимая роль пользователя")
         
+        db = await get_database()
         users = []
         cursor = db.users.find({"role": role}, {"password": 0})  # Exclude passwords
         async for user in cursor:
