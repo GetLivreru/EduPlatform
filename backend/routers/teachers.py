@@ -1,5 +1,4 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File, Depends, Form
-from motor.motor_asyncio import AsyncIOMotorClient
 from bson import ObjectId
 from typing import List, Optional
 import os
@@ -56,13 +55,12 @@ except FileNotFoundError:
 
 router = APIRouter()
 
-# MongoDB connection
-MONGODB_URL = os.getenv("MONGODB_URL", "mongodb+srv://Lida:oayjqe2005@cluster0.ejidejg.mongodb.net/?retryWrites=true&w=majority")
+# MongoDB connection - используем централизованное подключение
+from ..database import get_database
 
-logger.info(f"🗄️ MongoDB URL: {MONGODB_URL}")
-
-client = AsyncIOMotorClient(MONGODB_URL)
-db = client.LearnApp
+async def get_db():
+    """Helper function to get database instance"""
+    return await get_database()
 
 # OpenAI configuration
 openai_api_key = os.getenv("OPENAI_API_KEY")
@@ -423,6 +421,7 @@ async def upload_document_and_generate_quiz(
             "text_length": len(document_text)
         }
         
+        db = await get_db()
         document_result = await db.documents.insert_one(document_info)
         logger.info(f"✅ Метаданные документа сохранены в БД с ID: {document_result.inserted_id}")
         
@@ -476,6 +475,7 @@ async def get_my_documents(current_user: User = Depends(get_current_user)):
         )
     
     try:
+        db = await get_db()
         documents = []
         cursor = db.documents.find({"uploaded_by": current_user.id})
         async for doc in cursor:
@@ -518,6 +518,7 @@ async def get_my_generated_quizzes(current_user: User = Depends(get_current_user
         )
     
     try:
+        db = await get_db()
         quizzes = []
         cursor = db.quizzes.find({"created_by": current_user.id})
         async for quiz in cursor:
@@ -550,6 +551,7 @@ async def delete_document(
         )
     
     try:
+        db = await get_db()
         # Проверяем, что документ принадлежит текущему пользователю
         document = await db.documents.find_one({
             "_id": ObjectId(document_id),
@@ -603,6 +605,7 @@ async def get_quiz_stats(
         )
     
     try:
+        db = await get_db()
         # Проверяем, что квиз принадлежит текущему пользователю
         quiz = await db.quizzes.find_one({
             "_id": ObjectId(quiz_id),
@@ -658,6 +661,7 @@ async def download_document(
         )
     
     try:
+        db = await get_db()
         # Проверяем, что документ принадлежит текущему пользователю
         document = await db.documents.find_one({
             "_id": ObjectId(document_id),
