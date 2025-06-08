@@ -5,9 +5,9 @@ import os
 from dotenv import load_dotenv
 from datetime import datetime
 from typing import List, Dict, Optional
-from models import QuizBase, QuizResponse
-from middleware import require_admin
-from redis_cache import cache
+from ..models import QuizBase, QuizResponse
+from ..middleware import require_admin
+from ..redis_cache import cache
 
 # Load .env from parent directory with encoding fallback
 env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
@@ -26,7 +26,7 @@ except FileNotFoundError:
 router = APIRouter()
 
 # MongoDB connection - используем централизованное подключение
-from database import get_database
+from ..database import get_database
 
 @router.get("/api/quizzes", 
            summary="Получить список тестов",

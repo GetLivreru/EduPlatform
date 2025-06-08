@@ -6,14 +6,14 @@ import os
 from dotenv import load_dotenv
 from datetime import datetime
 from pydantic import BaseModel, Field
-from middleware import get_current_user
-from models import UserInDB
-from ai_service import generate_learning_recommendations
+from ..middleware import get_current_user
+from ..models import UserInDB
+from ..ai_service import generate_learning_recommendations
 
 router = APIRouter()
 
 # MongoDB connection - используем централизованное подключение
-from database import get_database
+from ..database import get_database
 
 async def get_db():
     """Helper function to get database instance"""

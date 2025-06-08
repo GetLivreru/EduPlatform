@@ -6,9 +6,9 @@ import os
 from dotenv import load_dotenv
 from datetime import datetime
 from openai import OpenAI
-from models import User, UserRole, DocumentS3
-from middleware import require_teacher_or_admin, get_current_user
-from s3_service import s3_service
+from ..models import User, UserRole, DocumentS3
+from ..middleware import require_teacher_or_admin, get_current_user
+from ..s3_service import s3_service
 import json
 import io
 import traceback
