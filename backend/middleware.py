@@ -3,7 +3,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Optional
 import jwt
 from datetime import datetime, timedelta
-from models import UserInDB, UserRole
+from .models import UserInDB, UserRole
 from motor.motor_asyncio import AsyncIOMotorClient
 from bson import ObjectId
 import os
@@ -32,7 +32,7 @@ print(f"🔑 SECRET_KEY loaded: {'***' + SECRET_KEY[-4:] if len(SECRET_KEY) > 4 
 security = HTTPBearer()
 
 # MongoDB connection - используем централизованное подключение
-from database import get_database
+from .database import get_database
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()

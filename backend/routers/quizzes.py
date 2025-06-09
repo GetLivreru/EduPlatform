@@ -5,9 +5,9 @@ import os
 from dotenv import load_dotenv
 from datetime import datetime
 from typing import List, Dict, Optional
-from models import QuizBase, QuizResponse
-from middleware import require_admin
-from redis_cache import cache
+from ..models import QuizBase, QuizResponse
+from ..middleware import require_admin
+from ..redis_cache import cache
 
 # Load .env from parent directory with encoding fallback
 env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
@@ -26,53 +26,53 @@ except FileNotFoundError:
 router = APIRouter()
 
 # MongoDB connection - используем централизованное подключение
-from database import get_database
+from ..database import get_database
 
 @router.get("/api/quizzes", 
-           response_model=List[QuizResponse],
            summary="Получить список тестов",
            description="Возвращает список всех доступных тестов",
            tags=["quizzes"])
 async def get_quizzes():
     try:
-        print("🔍 Public endpoint: Attempting to fetch quizzes")
+        print("🔍 DEBUG: Starting get_quizzes function")
         
-        # Сначала пробуем получить из кэша
+        # Temporary disable cache for debugging
+        print("🔍 DEBUG: Bypassing cache, fetching from MongoDB...")
+        
         try:
-            cached_quizzes = await cache.get_quizzes_list()
-            if cached_quizzes:
-                print("📦 Список квизов получен из кэша")
-                return cached_quizzes
-        except Exception as cache_error:
-            print(f"⚠️ Cache error (continuing without cache): {cache_error}")
-
-        # Если нет в кэше, получаем из БД
-        print("🔍 Fetching quizzes from MongoDB...")
-        db = await get_database()
+            db = await get_database()
+            print("🔍 DEBUG: Database connection successful")
+        except Exception as db_error:
+            print(f"❌ DEBUG: Database connection failed: {db_error}")
+            raise HTTPException(status_code=500, detail=f"Database connection failed: {str(db_error)}")
+        
         quizzes = []
-        cursor = db.quizzes.find()
-        async for quiz_doc in cursor:
-            try:
-                # Преобразуем _id в строку для правильной сериализации
-                quiz_doc["id"] = str(quiz_doc["_id"])
-                del quiz_doc["_id"]  # Удаляем _id, так как он уже преобразован в id
-                quizzes.append(quiz_doc)
-            except Exception as e:
-                print(f"⚠️ Error processing quiz document: {e}")
-                continue
-        
-        print(f"✅ Successfully fetched {len(quizzes)} quizzes from MongoDB")
-        
-        # Кэшируем результат на 10 минут
         try:
-            await cache.cache_quizzes_list(quizzes, ttl=600)
-            print(f"💾 Список квизов ({len(quizzes)} шт.) сохранен в кэш")
-        except Exception as cache_error:
-            print(f"⚠️ Cache save error (continuing): {cache_error}")
+            cursor = db.quizzes.find()
+            print("🔍 DEBUG: Cursor created")
+            
+            async for quiz_doc in cursor:
+                try:
+                    # Преобразуем _id в строку для правильной сериализации
+                    quiz_doc["id"] = str(quiz_doc["_id"])
+                    del quiz_doc["_id"]  # Удаляем _id, так как он уже преобразован в id
+                    quizzes.append(quiz_doc)
+                except Exception as e:
+                    print(f"⚠️ DEBUG: Error processing quiz document: {e}")
+                    continue
+            
+            print(f"✅ DEBUG: Successfully fetched {len(quizzes)} quizzes from MongoDB")
+        except Exception as db_query_error:
+            print(f"❌ DEBUG: Database query failed: {db_query_error}")
+            raise HTTPException(status_code=500, detail=f"Database query failed: {str(db_query_error)}")
         
         return quizzes
+    except HTTPException:
+        raise
     except Exception as e:
-        print(f"❌ Error in get_quizzes: {str(e)}")
+        print(f"❌ DEBUG: Unexpected error in get_quizzes: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(
             status_code=500,
             detail=f"Failed to fetch quizzes: {str(e)}"
