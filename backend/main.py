@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from passlib.context import CryptContext
 from bson import ObjectId
 from typing import List
-from .routers import quiz_attempts, quizzes, admin, teachers
+from src.auth.routers import quiz_attempts, quizzes, admin, teachers
 import os
 
 app = FastAPI(

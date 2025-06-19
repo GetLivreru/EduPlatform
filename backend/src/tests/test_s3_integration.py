@@ -28,7 +28,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from dotenv import load_dotenv
 load_dotenv()
 
-from s3_service import S3Service
+from aws.s3_service import S3Service
 
 # Настройка логирования
 logging.basicConfig(

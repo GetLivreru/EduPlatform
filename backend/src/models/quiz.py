@@ -1,7 +1,7 @@
 from typing import List, Dict, Optional, Any
 from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
-from app.models.common import PyObjectId
+from src.models.common import PyObjectId
 from bson import ObjectId
 
 class QuizQuestion(BaseModel):

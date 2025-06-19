@@ -64,7 +64,7 @@ async def generate_learning_recommendations(subject: str, level: str, quiz_resul
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "You are an expert educational content generator. Always respond with pure JSON, never using markdown formatting or code blocks."},
+                {"role": "system", "content": "You are expert educational content generator. Always respond with pure JSON, never using markdown formatting or code blocks."},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.7,

@@ -1,7 +1,7 @@
 from typing import Optional
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from datetime import datetime
-from app.models.common import PyObjectId
+from src.models.common import PyObjectId
 
 class User(BaseModel):
     name: str

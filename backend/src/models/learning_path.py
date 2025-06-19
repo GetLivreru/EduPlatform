@@ -1,21 +1,28 @@
-from typing import List, Optional, Any
+from typing import List
 from pydantic import BaseModel, Field, ConfigDict
-from datetime import datetime
-from app.models.common import PyObjectId
+from src.models.common import PyObjectId
 from bson import ObjectId
 
-class QuizAttempt(BaseModel):
-    quiz_id: str
-    start_time: datetime
-    status: str
-    answers: List[Any] = []
-    score: Optional[float] = None
+class Exercise(BaseModel):
+    day: int
+    topics: List[str]
+    exercises: List[str]
 
     model_config = ConfigDict(
         extra='allow'
     )
 
-class QuizAttemptDB(QuizAttempt):
+class LearningPathBase(BaseModel):
+    subject: str
+    level: str
+    content: List[Exercise]
+    duration_days: int
+
+    model_config = ConfigDict(
+        extra='allow'
+    )
+
+class LearningPathDB(LearningPathBase):
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
     
     model_config = ConfigDict(
@@ -25,14 +32,9 @@ class QuizAttemptDB(QuizAttempt):
         extra='allow'
     )
 
-class QuizAttemptResponse(BaseModel):
+class LearningPathResponse(LearningPathBase):
     id: str
-    quiz_id: str
-    start_time: datetime
-    status: str
-    answers: List[Any] = []
-    score: Optional[float] = None
-    
+
     model_config = ConfigDict(
         from_attributes=True,
         extra='allow'

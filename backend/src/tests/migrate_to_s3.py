@@ -29,7 +29,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from motor.motor_asyncio import AsyncIOMotorClient
 from bson import ObjectId
 from dotenv import load_dotenv
-from s3_service import S3Service
+from aws.s3_service import S3Service
 import tempfile
 import uuid
 
